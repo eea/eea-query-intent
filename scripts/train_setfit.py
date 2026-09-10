@@ -2,31 +2,49 @@
 
 Usage:
     uv run python scripts/train_setfit.py
+    uv run python scripts/train_setfit.py \
+        --train-file data/english_only/train.jsonl \
+        --calibration-file data/english_only/calibration.jsonl \
+        --test-file data/multilingual/v1/test.jsonl \
+        --model-dir models/setfit-en --model-version setfit-en-v1
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data" / "multilingual" / "v1"
-MODEL_DIR = ROOT / "models" / "setfit"
+DEFAULT_DATA = ROOT / "data" / "multilingual" / "v1"
+DEFAULT_MODEL_DIR = ROOT / "models" / "setfit"
 ELIGIBLE = ("question", "exploratory", "claim")
 LABELS = ("question", "exploratory", "claim", "retrieval", "unknown")
 BACKBONE = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
-def read_split(split: str) -> list[dict]:
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--train-file", default=str(DEFAULT_DATA / "train.jsonl"))
+    parser.add_argument(
+        "--calibration-file", default=str(DEFAULT_DATA / "calibration.jsonl")
+    )
+    parser.add_argument("--test-file", default=str(DEFAULT_DATA / "test.jsonl"))
+    parser.add_argument("--model-dir", default=str(DEFAULT_MODEL_DIR))
+    parser.add_argument("--model-version", default="setfit-v1")
+    return parser.parse_args()
+
+
+def read_file(path: str) -> list[dict]:
     return [
         json.loads(line)
-        for line in (DATA / f"{split}.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in Path(path).read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
 
 
-def train():
+def train(args) -> object:
     import torch
     import torch.nn as nn
     from sentence_transformers import SentenceTransformer
@@ -45,9 +63,10 @@ def train():
     head = SetFitHead(in_features=384, out_features=len(LABELS), device=device)
     model = SetFitModel(model_body=encoder, model_head=head, labels=list(LABELS))
 
-    rows = read_split("train")
+    rows = read_file(args.train_file)
     training_data = [row["text"] for row in rows]
     y = [LABELS.index(row["intent"]) for row in rows]
+    print(f"training on {len(rows)} rows from {args.train_file}")
 
     model.fit(
         training_data,
@@ -57,17 +76,18 @@ def train():
         head_learning_rate=1e-2,
         body_learning_rate=1e-5,
     )
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(str(MODEL_DIR))
+    model_dir = Path(args.model_dir)
+    model_dir.mkdir(parents=True, exist_ok=True)
+    model.save_pretrained(str(model_dir))
     return model
 
 
-def load_model():
+def load_model(args):
     import torch
     from setfit import SetFitModel
 
     device = "mps" if torch.backends.mps.is_available() else "cpu"
-    return SetFitModel.from_pretrained(str(MODEL_DIR), device=device)
+    return SetFitModel.from_pretrained(str(Path(args.model_dir)), device=device)
 
 
 def predict_row(model, text: str) -> tuple[str, float]:
@@ -82,9 +102,10 @@ def predict_row(model, text: str) -> tuple[str, float]:
     return top_intent, eligible_probability
 
 
-def emit_predictions(split: str, model) -> Path:
-    out = MODEL_DIR / f"{split}-predictions.jsonl"
-    rows = read_split(split)
+def emit_predictions(args, split: str, file: str, model) -> Path:
+    model_dir = Path(args.model_dir)
+    out = model_dir / f"{split}-predictions.jsonl"
+    rows = read_file(file)
     with out.open("w", encoding="utf-8") as handle:
         for row in rows:
             started = time.perf_counter()
@@ -97,33 +118,36 @@ def emit_predictions(split: str, model) -> Path:
                 "eligible_probability": eligible_probability,
                 "confidence": max(eligible_probability, 1 - eligible_probability),
                 "abstained": False,
-                "model_version": "setfit-v1",
+                "model_version": args.model_version,
                 "latency_ms": latency,
             }
             handle.write(json.dumps(prediction) + "\n")
-    print(f"wrote {out}")
+    print(f"wrote {out} ({len(rows)} rows)")
     return out
 
 
-def write_manifest() -> None:
+def write_manifest(args) -> None:
+    model_dir = Path(args.model_dir)
     manifest = {
         "model_type": "setfit",
-        "model_version": "setfit-v1",
+        "model_version": args.model_version,
         "backbone": BACKBONE,
-        "artifact": str(MODEL_DIR),
+        "artifact": str(model_dir),
         "labels": list(LABELS),
         "eligible_labels": list(ELIGIBLE),
+        "train_file": args.train_file,
     }
-    (MODEL_DIR / "manifest.json").write_text(
+    (model_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"
     )
 
 
 def main() -> int:
-    model = train()
-    write_manifest()
-    emit_predictions("test", model)
-    emit_predictions("calibration", model)
+    args = parse_args()
+    model = train(args)
+    write_manifest(args)
+    emit_predictions(args, "test", args.test_file, model)
+    emit_predictions(args, "calibration", args.calibration_file, model)
     return 0
 
 

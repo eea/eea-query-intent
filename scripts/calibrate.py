@@ -81,13 +81,31 @@ def evaluate_threshold(
 
 
 def main() -> int:
-    import sys
+    import argparse
 
-    if len(sys.argv) != 2 or sys.argv[1] not in {"fasttext", "setfit"}:
-        raise SystemExit("usage: uv run python scripts/calibrate.py <fasttext|setfit>")
-    model_dir = ROOT / "models" / sys.argv[1]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("model_type", choices=["fasttext", "setfit"])
+    parser.add_argument(
+        "--model-dir",
+        default=None,
+        help="model dir (default: models/<model_type>)",
+    )
+    parser.add_argument(
+        "--calibration-file",
+        default=str(CALIBRATION),
+        help="calibration gold split",
+    )
+    args = parser.parse_args()
 
-    gold = load_calibration()
+    model_dir = (
+        Path(args.model_dir) if args.model_dir else ROOT / "models" / args.model_type
+    )
+
+    gold = [
+        json.loads(line)
+        for line in Path(args.calibration_file).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     probabilities = load_predictions(model_dir)
     missing = [row["id"] for row in gold if row["id"] not in probabilities]
     if missing:
@@ -119,7 +137,7 @@ def main() -> int:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["abstain_threshold"] = chosen["threshold"]
     manifest["calibration"] = {
-        "split": "data/multilingual/v1/calibration.jsonl",
+        "split": args.calibration_file,
         "records": len(gold),
         "selection_rule": selection,
         "target_worst_no_ai_fp_rate": TARGET_WORST_FP_RATE,
@@ -129,7 +147,7 @@ def main() -> int:
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
     print(
-        f"{sys.argv[1]}: threshold={chosen['threshold']} "
+        f"{args.model_type}: threshold={chosen['threshold']} "
         f"({selection}) "
         f"worst-language FP rate={chosen['worst_language_no_ai_fp_rate']:.3f} "
         f"eligible miss rate={chosen['eligible_miss_rate']:.3f}"

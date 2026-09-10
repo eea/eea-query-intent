@@ -1,0 +1,33 @@
+[project]
+name = "eea-query-intent"
+version = "0.1.0"
+description = "Benchmark and service tooling for multilingual EEA search-query intent routing"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "European Environment Agency" }]
+dependencies = []
+
+[project.scripts]
+eea-query-intent = "eea_query_intent.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<10",
+  "ruff>=0.9,<1",
+]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

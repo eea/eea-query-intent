@@ -46,3 +46,6 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "scripts/translations/*.py" = ["E501"]
 # GPT translation scripts hold long, unsplit prompt/query string literals.
 "scripts/gpt_translate_*.py" = ["E501"]
+# GPT acceptance-corpus scripts hold long, unsplit prompt string literals.
+"scripts/gpt_acceptance_*.py" = ["E501"]
+"scripts/repair_acceptance_overlaps.py" = ["E501"]

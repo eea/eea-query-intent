@@ -36,10 +36,49 @@ URL (`https://eea.example/air`, rated ~0.98) and short topical phrases
 the irreducible no-AI/eligible boundary and are the main reason the threshold
 is held at `0.98`.
 
-**Honest gap:** the test split has only 29 rows per language, so "0/9 no-AI
-false routes" is not strong evidence of a ≤1% rate; the acceptance gates
-(300 reviewed examples/language, ≥98% eligible precision, ≥95% macro-F1)
-still fail on data volume, not model quality.
+**Honest gap (revised 2026-09-11):** the test split has only 29 rows per
+language, so "0/9 no-AI false routes" is not strong evidence of a ≤1% rate.
+The first real acceptance measurement (below) showed the gap is not only
+data volume — the model itself misroutes confident "topic + location"
+retrieval phrases, which the v1 test split was too small and too close to
+the training distribution to expose.
+
+## Acceptance measurement: English (2026-09-11)
+
+The first acceptance-set shard (spec: [`acceptance-spec.md`](acceptance-spec.md))
+is complete for English: 760 natively generated rows (150 question / 120
+exploratory / 90 claim / 350 retrieval / 50 unknown), GPT-5.6-Sol
+adversarially QA'd (710 ok / 81 fix / 34 drop + 17 top-ups), zero
+overlap with any training data. The remaining 27 languages are generated
+the same way.
+
+`setfit-v3` evaluated on the English acceptance shard (360 eligible / 400
+no-AI), binary routing at each threshold:
+
+| threshold | no-AI false-route | eligible recall | abstention |
+|---|---|---|---|
+| 0.80 | 21.0% | 88.3% | 47% |
+| 0.90 | 14.2% | 83.6% | 53% |
+| 0.95 | 8.5% | 77.8% | 59% |
+| 0.98 (deployed) | 5.0% | 65.0% | 67% |
+| 0.99 | 3.0% | 58.3% | 71% |
+| 0.995 | 2.0% | 49.4% | 76% |
+| 0.999 | 0.5% | 32.2% | 85% |
+
+No threshold passes the acceptance gates. The ≤1% no-AI false-route gate
+is only reachable near 0.999+, where ~85% of all queries abstain. Error
+analysis of the 20 false AI routes: 19/20 are confident (p≈0.99–1.0)
+"topic + location" retrieval phrases (*pollinator decline Europe*,
+*floods in Germany*, *offshore wind Denmark*) — the training bank's no-AI
+side was document-type heavy (SOER/PDF/data/maps) and underrepresented
+this shape. Exploratory is the weakest eligible subtype (72/120 abstained;
+79 of the 126 missed eligible queries sit in the 0.85–0.98 band).
+
+**Remediation (in progress):** a large, diverse, natively generated
+training corpus (`data/training/v1`, ~3,000 rows/language weighted toward
+the hard boundary) is being generated with the same GPT pipeline, then the
+head is retrained and re-measured against the held-out acceptance shards.
+The acceptance set itself stays untouched by training.
 
 ---
 

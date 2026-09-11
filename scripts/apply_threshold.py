@@ -1,12 +1,11 @@
 """Regenerate test predictions with the calibrated abstention threshold.
 
-Reads each model's raw test predictions and manifest threshold, marks
+Reads the setfit model's raw test predictions and manifest threshold, marks
 rows below the threshold as abstained (not eligible, intent unknown),
 and writes <split>-predictions-gated.jsonl for the evaluate CLI.
 
 Usage:
-    uv run python scripts/apply_threshold.py fasttext
-    uv run python scripts/apply_threshold.py setfit
+    uv run python scripts/apply_threshold.py
 """
 
 from __future__ import annotations
@@ -18,13 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def main() -> int:
-    import sys
-
-    if len(sys.argv) != 2 or sys.argv[1] not in {"fasttext", "setfit"}:
-        raise SystemExit(
-            "usage: uv run python scripts/apply_threshold.py <fasttext|setfit>"
-        )
-    model_type = sys.argv[1]
+    model_type = "setfit"
     model_dir = ROOT / "models" / model_type
     manifest = json.loads((model_dir / "manifest.json").read_text(encoding="utf-8"))
     threshold = float(manifest["abstain_threshold"])

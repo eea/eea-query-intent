@@ -9,7 +9,6 @@ The chosen threshold is written into the model manifest so the service
 and the evaluation harness use the same value.
 
 Usage:
-    uv run python scripts/calibrate.py fasttext
     uv run python scripts/calibrate.py setfit
 """
 
@@ -21,7 +20,7 @@ from pathlib import Path
 from eea_query_intent.contracts import AI_ELIGIBLE_INTENTS
 
 ROOT = Path(__file__).resolve().parent.parent
-CALIBRATION = ROOT / "data/multilingual" / "v1" / "calibration.jsonl"
+CALIBRATION = ROOT / "data/expanded_v2" / "calibration.jsonl"
 THRESHOLDS = [round(0.50 + 0.01 * i, 2) for i in range(50)]  # 0.50 .. 0.99
 TARGET_WORST_FP_RATE = 0.01
 
@@ -84,7 +83,7 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("model_type", choices=["fasttext", "setfit"])
+    parser.add_argument("model_type", choices=["setfit"])
     parser.add_argument(
         "--model-dir",
         default=None,

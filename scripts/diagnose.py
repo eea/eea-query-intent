@@ -9,7 +9,7 @@ ELIGIBLE = {"question", "exploratory", "claim"}
 
 
 def main() -> int:
-    model_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "models" / "fasttext"
+    model_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "models" / "setfit"
     gold = {
         json.loads(line)["id"]: json.loads(line)
         for line in (ROOT / "data/multilingual/v1/test.jsonl")

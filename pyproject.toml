@@ -17,7 +17,6 @@ dev = [
   "ruff>=0.9,<1",
 ]
 ml = [
-    "fasttext-wheel>=0.9.2",
     "numpy>=1.26,<2",
     "onnxruntime>=1.29.0",
     "setfit>=1.2.0",
@@ -45,3 +44,5 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 # Translation data files hold long, unsplit string literals.
 "scripts/translations/*.py" = ["E501"]
+# GPT translation scripts hold long, unsplit prompt/query string literals.
+"scripts/gpt_translate_*.py" = ["E501"]

@@ -1,14 +1,13 @@
 """FastAPI service exposing the multilingual query intent classifier.
 
-The service is model-agnostic: it loads one candidate through an adapter,
-applies the deterministic local policy guards first, then the calibrated
-abstention threshold, and returns the shared ``ClassificationResult``
-contract. Any adapter failure is answered with a 503 JSON error so that
-clients fail closed (no AI summary) instead of guessing.
+The service loads the SetFit model through an adapter, applies the
+deterministic local policy guards first, then the calibrated abstention
+threshold, and returns the shared ``ClassificationResult`` contract. Any
+adapter failure is answered with a 503 JSON error so that clients fail
+closed (no AI summary) instead of guessing.
 
 Environment:
-    EEA_QI_MODEL_TYPE        'setfit' (default) or 'fasttext'
-    EEA_QI_MODEL_PATH        model directory (default: models/<type>)
+    EEA_QI_MODEL_PATH        model directory (default: models/setfit)
     EEA_QI_ABSTAIN_THRESHOLD overrides the manifest threshold
     EEA_QI_DEVICE            'cpu' (default), 'mps', or 'cuda'
     EEA_QI_MAX_WORDS         policy guard word limit (default: 20)
@@ -38,8 +37,7 @@ from eea_query_intent.policy import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-MODEL_LABELS = ("question", "exploratory", "claim", "retrieval", "unknown")
-ELIGIBLE_LABELS = ("question", "exploratory", "claim")
+DEFAULT_MODEL_PATH = REPO_ROOT / "models" / "setfit"
 
 
 class IntentAdapter(Protocol):
@@ -50,59 +48,46 @@ class IntentAdapter(Protocol):
 
 
 @dataclass(frozen=True)
-class FastTextAdapter:
-    model: Any
-    model_version: str
-
-    def classify(self, text: str) -> tuple[str, float]:
-        labels, probabilities = self.model.predict(text.replace("\n", " "))
-        prob_map = {label: 0.0 for label in MODEL_LABELS}
-        for label, probability in zip(labels, probabilities, strict=False):
-            prob_map[str(label)] = float(probability)
-        top_intent = max(prob_map, key=prob_map.get)
-        eligible_probability = min(
-            1.0, max(0.0, sum(prob_map[label] for label in ELIGIBLE_LABELS))
-        )
-        return top_intent, eligible_probability
-
-
-@dataclass(frozen=True)
 class SetFitAdapter:
     model: Any
     model_version: str
+    labels: tuple[str, ...]
+    eligible_labels: tuple[str, ...]
 
     def classify(self, text: str) -> tuple[str, float]:
         probabilities = self.model.predict_proba(
             [text.replace("\n", " ")], as_numpy=True
         )[0]
-        prob_map = dict(
-            zip(MODEL_LABELS, (float(prob) for prob in probabilities), strict=False)
-        )
+        probabilities = tuple(float(p) for p in probabilities)
+        if len(probabilities) != len(self.labels):
+            raise ValueError(
+                f"model returned {len(probabilities)} probabilities, "
+                f"expected {len(self.labels)}"
+            )
+        prob_map = dict(zip(self.labels, probabilities, strict=True))
         top_intent = max(prob_map, key=prob_map.get)
         eligible_probability = min(
-            1.0, max(0.0, sum(prob_map[label] for label in ELIGIBLE_LABELS))
+            1.0, max(0.0, sum(prob_map[label] for label in self.eligible_labels))
         )
         return top_intent, eligible_probability
 
 
-def load_adapter(model_type: str, model_path: Path, device: str):
-    """Load the model and its manifest; returns (adapter, manifest)."""
+def load_adapter(model_path: Path, device: str):
+    """Load the SetFit model and its manifest; returns (adapter, manifest)."""
     manifest = json.loads((model_path / "manifest.json").read_text("utf-8"))
+    for key in ("model_version", "labels", "eligible_labels"):
+        if key not in manifest:
+            raise ValueError(f"manifest missing required key '{key}'")
 
-    if model_type == "fasttext":
-        import fasttext
+    from setfit import SetFitModel
 
-        model = fasttext.load_model(str(model_path / "model.ftz"))
-        adapter: IntentAdapter = FastTextAdapter(
-            model=model, model_version=manifest["model_version"]
-        )
-    elif model_type == "setfit":
-        from setfit import SetFitModel
-
-        model = SetFitModel.from_pretrained(str(model_path), device=device)
-        adapter = SetFitAdapter(model=model, model_version=manifest["model_version"])
-    else:
-        raise ValueError(f"unknown model type: {model_type}")
+    model = SetFitModel.from_pretrained(str(model_path), device=device)
+    adapter: IntentAdapter = SetFitAdapter(
+        model=model,
+        model_version=manifest["model_version"],
+        labels=tuple(manifest["labels"]),
+        eligible_labels=tuple(manifest["eligible_labels"]),
+    )
     return adapter, manifest
 
 
@@ -159,17 +144,11 @@ class ClassifyRequest(BaseModel):
 
 
 def create_app() -> FastAPI:
-    model_type = os.environ.get("EEA_QI_MODEL_TYPE", "setfit")
-    model_path = Path(
-        os.environ.get(
-            "EEA_QI_MODEL_PATH",
-            str(REPO_ROOT / "models" / model_type),
-        )
-    )
+    model_path = Path(os.environ.get("EEA_QI_MODEL_PATH", str(DEFAULT_MODEL_PATH)))
     device = os.environ.get("EEA_QI_DEVICE", "cpu")
     max_words = int(os.environ.get("EEA_QI_MAX_WORDS", str(DEFAULT_MAX_WORDS)))
 
-    adapter, manifest = load_adapter(model_type, model_path, device)
+    adapter, manifest = load_adapter(model_path, device)
     threshold = float(
         os.environ.get(
             "EEA_QI_ABSTAIN_THRESHOLD",
@@ -191,7 +170,7 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {
             "status": "ok",
-            "model_type": model_type,
+            "model_type": "setfit",
             "model_version": manifest["model_version"],
             "abstain_threshold": threshold,
             "max_words": max_words,

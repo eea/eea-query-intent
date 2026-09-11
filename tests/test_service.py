@@ -113,7 +113,7 @@ def test_health_and_classify_endpoints(
     monkeypatch.setattr(
         service_module,
         "load_adapter",
-        lambda model_type, model_path, device: (
+        lambda model_path, device: (
             adapter,
             manifest,
         ),
@@ -147,7 +147,7 @@ def test_policy_guard_reasons_come_from_the_endpoint(
     monkeypatch.setattr(
         service_module,
         "load_adapter",
-        lambda model_type, model_path, device: (adapter, manifest),
+        lambda model_path, device: (adapter, manifest),
     )
     client = TestClient(create_app())
 
@@ -165,7 +165,7 @@ def test_adapter_error_returns_503_fail_closed(monkeypatch, manifest: dict) -> N
     monkeypatch.setattr(
         service_module,
         "load_adapter",
-        lambda model_type, model_path, device: (
+        lambda model_path, device: (
             ExplodingAdapter(),
             manifest,
         ),

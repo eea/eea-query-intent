@@ -30,6 +30,16 @@ def _count_words(query: str) -> int:
     return sum(1 for token in query.split() if any(ch.isalnum() for ch in token))
 
 
+def _looks_like_url(query: str) -> bool:
+    """Detect a pasted URL, which is never an intent to be classified.
+
+    Conservative: only explicit URL forms (http(s):// or a www. prefix).
+    Bare domains are left to the model to avoid false positives on real
+    queries that mention a site.
+    """
+    return query.strip().lower().startswith(("http://", "https://", "www."))
+
+
 def evaluate_local_policy(
     query: str, *, max_words: int = DEFAULT_MAX_WORDS
 ) -> PolicyDecision:
@@ -48,6 +58,14 @@ def evaluate_local_policy(
             should_classify=False,
             eligible=False,
             reason="empty",
+        )
+
+    if _looks_like_url(query):
+        return PolicyDecision(
+            word_count=word_count,
+            should_classify=False,
+            eligible=False,
+            reason="url",
         )
 
     if word_count > max_words:

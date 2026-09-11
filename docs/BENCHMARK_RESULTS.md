@@ -1,4 +1,49 @@
-# Benchmark results — dataset v1 (2026-09-10)
+# Benchmark results
+
+## Final model: `setfit-v3` — all 28 languages (current)
+
+The current shipping model is **SetFit only**. The fastText candidate was
+removed from the service and codebase: it lost the bake-off and its adapter
+was also incorrect (fastText returns `__label__`-prefixed labels and
+`k=1` by default, so the aggregate eligible probability could not be
+computed). Historical fastText numbers remain in the v1 section below, marked
+as a rejected candidate.
+
+`setfit-v3` is trained on the hand-authored English anchor bank plus
+GPT-5.6-Sol QA'd per-row translations for all 27 other supported languages
+(11,772 train / 1,330 calibration rows). Evaluated on the held-out test split
+(25 languages present, 29 rows each), gated per language on the no-AI
+false-routing rate (PASS = ≤1%):
+
+| threshold | languages passing | failing |
+|---|---|---|
+| 0.85 | 19/25 | is, fi, it, lt, pt, sk |
+| 0.90 | 22/25 | fi, is, sk |
+| 0.95 | 24/25 | sk |
+| **0.98 (chosen)** | **25/25** | — |
+
+The `0.98` threshold was chosen as the **calibrated value** (the threshold
+that minimizes the worst-language no-AI false-positive rate on the
+calibration split) and it is fail-closed. It keeps the held-out test split
+at 0 false routes for every language. The cost is lower eligible-query
+recall (the fail-closed trade-off), which is expected to improve as
+native-speaker-reviewed data reaches the 300-per-language bar.
+
+Known hard cases (from the calibration split, not the test split): a pasted
+URL (`https://eea.example/air`, rated ~0.98) and short topical phrases
+("EU law on climate", ~0.99). The URL is now caught by a deterministic
+**policy guard** (reason `url`) before the model; short topical phrases remain
+the irreducible no-AI/eligible boundary and are the main reason the threshold
+is held at `0.98`.
+
+**Honest gap:** the test split has only 29 rows per language, so "0/9 no-AI
+false routes" is not strong evidence of a ≤1% rate; the acceptance gates
+(300 reviewed examples/language, ≥98% eligible precision, ≥95% macro-F1)
+still fail on data volume, not model quality.
+
+---
+
+## v1 bake-off: dataset v1 (2026-09-10) — historical
 
 Reproducible evidence for the first real bake-off of the two candidate
 adapters on `data/multilingual/v1` (6,793 rows, 28 languages, 56 synthetic
@@ -78,7 +123,15 @@ Consequences, recorded honestly:
    threshold after the native-review data exists is the planned trade
    lever (see `docs/benchmark-spec.md`).
 
-## Reproduce
+## Reproduce (historical — inputs removed)
+
+> The v1 bake-off inputs are no longer in the tree: the fastText candidate
+> (`train_fasttext.py`, `models/fasttext`) and the v1 template dataset
+> (`data/multilingual/v1/train|validation|calibration.jsonl`,
+> `data/templates/`, `scripts/generate_multilingual.py`) were removed once the
+> English-bank + per-row-translation pipeline replaced them. The commands
+> below are kept for the record only. The current pipeline is documented in
+> `docs/runbook.md`.
 
 ```bash
 uv sync --all-groups

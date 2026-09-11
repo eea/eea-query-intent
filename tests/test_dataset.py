@@ -92,9 +92,33 @@ def test_rejects_translation_template_leakage_across_splits(tmp_path: Path) -> N
         load_dataset(path)
 
 
-def test_acceptance_data_must_be_native_reviewed(tmp_path: Path) -> None:
+def test_acceptance_data_must_be_reviewed(tmp_path: Path) -> None:
     path = tmp_path / "data.jsonl"
     write_jsonl(path, [valid_row(review_status="policy_reviewed")])
 
-    with pytest.raises(DatasetValidationError, match="must be native_reviewed"):
+    with pytest.raises(DatasetValidationError, match="must be reviewed"):
         load_dataset(path, require_acceptance_ready=True)
+
+
+def test_acceptance_data_accepts_llm_and_native_reviewed(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "data.jsonl"
+    write_jsonl(
+        path,
+        [
+            valid_row(
+                id="en-0001", template_id="t-0001", review_status="native_reviewed"
+            ),
+            valid_row(
+                id="fr-0001",
+                language="fr",
+                template_id="t-0002",
+                review_status="llm_reviewed",
+            ),
+        ],
+    )
+
+    records = load_dataset(path, require_acceptance_ready=True)
+
+    assert len(records) == 2

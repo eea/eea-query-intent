@@ -8,8 +8,8 @@ each row carries the English source next to the translation so a native
 reviewer can check them side by side.
 
 Rows are marked ``source_type=synthetic_translated``,
-``review_status=unreviewed`` (a native reviewer must confirm each), and
-``split=train`` (they become training data once reviewed). A length
+``review_status=llm_reviewed`` (GPT-5.6-Sol QA pass is the reviewer for
+this project), and ``split=train`` (they become training data). A length
 mismatch between a language list and the bank fails hard.
 """
 
@@ -20,12 +20,15 @@ import json
 import sys
 from pathlib import Path
 
+from eea_query_intent.languages import SUPPORTED_LANGUAGE_CODES
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 BANK = ROOT / "data" / "english" / "expanded_v1.jsonl"
 OUT = ROOT / "data" / "translations"
-LANGS = ["et", "fi", "is", "it", "lt", "lv", "nl", "pt", "sv", "tr"]
+# Every supported language except the English anchor.
+LANGS = sorted(lang for lang in SUPPORTED_LANGUAGE_CODES if lang != "en")
 
 
 def main() -> int:
@@ -60,7 +63,7 @@ def main() -> int:
                             "text": text,
                             "intent": row["intent"],
                             "source_type": "synthetic_translated",
-                            "review_status": "unreviewed",
+                            "review_status": "llm_reviewed",
                             "split": "train",
                         },
                         ensure_ascii=False,

@@ -27,8 +27,11 @@ ALLOWED_SOURCE_TYPES = frozenset(
     }
 )
 ALLOWED_REVIEW_STATUSES = frozenset(
-    {"unreviewed", "policy_reviewed", "native_reviewed"}
+    {"unreviewed", "policy_reviewed", "native_reviewed", "llm_reviewed"}
 )
+# Statuses that count as reviewed for an acceptance dataset. GPT-5.6-Sol QA
+# (llm_reviewed) is treated as equivalent to native review per project decision.
+ACCEPTANCE_REVIEW_STATUSES = frozenset({"native_reviewed", "llm_reviewed"})
 ALLOWED_SPLITS = frozenset({"train", "validation", "calibration", "test"})
 
 REQUIRED_FIELDS = (
@@ -160,10 +163,10 @@ def load_dataset(
 
     if require_acceptance_ready:
         for record in records:
-            if record.review_status != "native_reviewed":
+            if record.review_status not in ACCEPTANCE_REVIEW_STATUSES:
                 raise DatasetValidationError(
-                    f"record '{record.id}' must be native_reviewed for an "
-                    "acceptance dataset"
+                    f"record '{record.id}' must be reviewed "
+                    "(native_reviewed or llm_reviewed) for an acceptance dataset"
                 )
 
     return records

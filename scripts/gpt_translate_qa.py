@@ -16,9 +16,16 @@ import sys
 MODEL = "openai-codex/gpt-5.6-sol"
 
 NAMES = {
-    "et": "Estonian", "fi": "Finnish", "is": "Icelandic", "it": "Italian",
-    "lt": "Lithuanian", "lv": "Latvian", "nl": "Dutch", "pt": "Portuguese",
-    "sv": "Swedish", "tr": "Turkish",
+    "et": "Estonian",
+    "fi": "Finnish",
+    "is": "Icelandic",
+    "it": "Italian",
+    "lt": "Lithuanian",
+    "lv": "Latvian",
+    "nl": "Dutch",
+    "pt": "Portuguese",
+    "sv": "Swedish",
+    "tr": "Turkish",
 }
 
 SECTIONS = [
@@ -51,7 +58,8 @@ def load_lang(lang):
 
 
 def english_for(lang):
-    rows = [json.loads(l) for l in open(f"data/translations/{lang}.jsonl", encoding="utf-8")]
+    with open(f"data/translations/{lang}.jsonl", encoding="utf-8") as handle:
+        rows = [json.loads(line) for line in handle if line.strip()]
     return [r["english"] for r in rows]
 
 
@@ -63,7 +71,7 @@ def extract_json(text):
     e = text.rfind("}")
     if s == -1 or e == -1 or e < s:
         raise ValueError("no JSON object in model output")
-    return json.loads(text[s:e + 1])
+    return json.loads(text[s : e + 1])
 
 
 def call_gpt(pairs, lang, tries=3):
@@ -72,11 +80,24 @@ def call_gpt(pairs, lang, tries=3):
     for i, (en, tr) in enumerate(pairs, 1):
         body += f"{i} EN: {en} | {lang}: {tr}\n"
     last_err = None
-    for attempt in range(tries):
+    for _ in range(tries):
         try:
             out = subprocess.run(
-                ["pi", "--model", MODEL, "-p", "-nt", "-nc", "-ns", "-ne", "--no-session", body],
-                capture_output=True, text=True, timeout=600,
+                [
+                    "pi",
+                    "--model",
+                    MODEL,
+                    "-p",
+                    "-nt",
+                    "-nc",
+                    "-ns",
+                    "-ne",
+                    "--no-session",
+                    body,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=600,
             )
             return extract_json(out.stdout)
         except Exception as e:  # noqa: BLE001
@@ -112,9 +133,9 @@ def main():
 
     log = []
     for start in range(0, 460, batch):
-        chunk = trs[start:start + batch]
-        enchunk = english[start:start + batch]
-        res = call_gpt(list(zip(enchunk, chunk)), lang)
+        chunk = trs[start : start + batch]
+        enchunk = english[start : start + batch]
+        res = call_gpt(list(zip(enchunk, chunk, strict=True)), lang)
         rows = {r["i"]: r for r in res.get("rows", [])}
         changed_in_batch = 0
         for i in range(len(chunk)):
@@ -128,11 +149,19 @@ def main():
                     trs[start + i] = new
                     log.append((start + i + 1, old, new))
                     changed_in_batch += 1
-        print(f"{lang} batch {start + 1}-{start + len(chunk)}: {changed_in_batch} fixes", flush=True)
+        print(
+            f"{lang} batch {start + 1}-{start + len(chunk)}: {changed_in_batch} fixes",
+            flush=True,
+        )
 
     rewrite_py(lang, trs)
     with open(f"reports/gpt_qa_{lang}.json", "w", encoding="utf-8") as f:
-        json.dump([{"row": r, "old": o, "new": n} for r, o, n in log], f, ensure_ascii=False, indent=1)
+        json.dump(
+            [{"row": r, "old": o, "new": n} for r, o, n in log],
+            f,
+            ensure_ascii=False,
+            indent=1,
+        )
     print(f"{lang}: {len(log)} total corrections applied", flush=True)
 
 

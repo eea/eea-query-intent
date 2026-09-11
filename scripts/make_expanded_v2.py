@@ -18,6 +18,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from eea_query_intent.languages import SUPPORTED_LANGUAGE_CODES
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "expanded_v2"
 
@@ -26,8 +28,13 @@ BASE = (
     ROOT / "data" / "english_only" / "calibration.jsonl",
 )
 BANK = ROOT / "data" / "english" / "expanded_v1.jsonl"
-LANGS = ["et", "fi", "is", "it", "lt", "lv", "nl", "pt", "sv", "tr"]
 TRANSLATIONS = ROOT / "data" / "translations"
+# Every supported language except the English anchor that has a QA'd file.
+LANGS = [
+    lang
+    for lang in sorted(SUPPORTED_LANGUAGE_CODES)
+    if lang != "en" and (TRANSLATIONS / f"{lang}.jsonl").exists()
+]
 
 
 def load(path: Path) -> list[dict]:

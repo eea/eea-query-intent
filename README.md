@@ -51,25 +51,38 @@ any error means **no AI**.
 
 **Honest limitations**
 
-- The held-out test split has only 29 rows per language, so "0 false routes
-  in 9 no-AI rows" is not strong statistical evidence of a ≤1% rate. The
-  acceptance gates (300 reviewed examples per language, ≥98% eligible
-  precision, ≥95% macro-F1) are deliberately still failing on **data volume**.
+- The first real acceptance measurement (English, 760 natively generated
+  rows, `docs/acceptance-spec.md`) showed `setfit-v3` **fails the acceptance
+  gates**: at the deployed `0.98` threshold it false-routes 5% of no-AI
+  queries (confident "topic + location" retrieval phrases like *floods in
+  Germany*) and abstains on 35% of eligible queries; no threshold makes it
+  pass (≤1% false routes only near `0.999+`, where ~85% of queries abstain).
+  The 25/25 held-out test split above was over-optimistic: 29 rows per
+  language, too close to the training distribution.
 - Translations of one 460-row English bank add language coverage but limited
   query diversity (no typos, navigation searches, real production distribution).
 - The `0.98` threshold is conservative by design (fail-closed); it trades some
   eligible-query recall for safety. Short topical phrases remain the hardest
   no-AI/eligible boundary.
 
-## Next steps
+## Next steps (in progress, 2026-09-11)
 
-- Native-speaker-reviewed data at the 300-per-language bar (the acceptance
-  blocker) — retrain and re-tune the threshold once it exists.
-- ONNX + dynamic INT8 export of the SetFit artifact (~466 MB → ~120 MB) with
-  accuracy and calibration re-verified on the INT8 artifact.
-- Latency/RSS/cold-start measurement on the target small-CPU box.
-- Frontend swap in `volto-searchlib` (async intent fetch, query-keyed state,
-  cancellation, timeout/fail-closed, E2E network assertions).
+1. **Acceptance corpus** (the statistical holdout): 760 natively generated,
+   GPT-QA'd rows per language × 28 (`data/acceptance/v1`, spec in
+   `docs/acceptance-spec.md`). English done; the other 27 are generating.
+2. **Diverse training corpus** (`data/training/v1`): ~3,000 natively
+   generated rows per language, weighted toward the hard boundary, disjoint
+   from the acceptance set by construction. Generated + QA'd with the same
+   GPT pipeline (`scripts/gpt_train_gen.py`, `scripts/gpt_train_qa.py`).
+3. **Retrain + re-measure**: `scripts/run_en_validation.sh` validates the
+   recipe on English first; then `scripts/make_final_v3.py` → retrain →
+   `scripts/sweep_acceptance.py` on the full acceptance set picks the
+   deployment threshold.
+4. ONNX + dynamic INT8 export of the SetFit artifact (~466 MB → ~120 MB)
+   with accuracy and calibration re-verified on the INT8 artifact.
+5. Latency/RSS/cold-start measurement on the target small-CPU box.
+6. Frontend swap in `volto-searchlib` (async intent fetch, query-keyed
+   state, cancellation, timeout/fail-closed, E2E network assertions).
 
 ## Language scope
 

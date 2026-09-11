@@ -114,7 +114,7 @@ Consequences, recorded honestly:
 2. The production-blocking gap is **native-speaker-reviewed data**
    (per `docs/annotation-spec.md`: validation/calibration/test records
    require `native_reviewed`), not a larger model.
-3. SetFit (multilingual MiniLM L6 + linear head) is the shipping default
+3. SetFit (multilingual MiniLM-L12 + linear head) is the shipping default
    candidate: it is the only candidate that meets the worst-language
    no-AI target on calibration, and it has far better eligible recall
    (3.6% missed vs 12.8% raw).

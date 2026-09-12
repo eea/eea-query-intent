@@ -5,6 +5,10 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
+# Generation runs on the free in-house gateway (fast, parallel, no Codex
+# quota). The quality gate for the acceptance exam stays in the QA phase,
+# which runs on Codex (see run_acceptance_qa_phase.sh).
+export EEA_QI_GEN_MODEL="EEA/Inhouse-LLM/gemma-4-31B-it"
 
 # guard: valid 27-language list, rebuild if missing/broken
 if [ ! -s .pipeline/acc_langs.txt ] || [ "$(tr -d ' ' < .pipeline/acc_langs.txt | wc -c)" -lt 54 ]; then

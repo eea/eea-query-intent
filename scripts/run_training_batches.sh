@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# Stage 3: generate the 27-language diverse training corpus (GPT-5.6 Sol),
-# then QA it. Launch AFTER the English validation (run_en_validation.sh)
+# Stage 3: generate the 27-language diverse training corpus on the free
+# in-house gateway (Gemma 4 31B IT), then QA it on the same gateway.
+# Launch AFTER the English validation (run_en_validation.sh)
 # confirms the recipe closes the boundary gap.
 #
-# Generation runs at P4 with limit-aware backoff (built into the scripts);
-# the QA phase starts only after every generation finishes.
+# Generation runs at P4 (gateway parallelism verified at 4); the QA phase
+# starts only after every generation finishes.
 #
 # Usage: bash scripts/run_training_batches.sh
 set -uo pipefail
 cd "$(dirname "$0")/.."
+
+# Training data is study material: both generation and review run on the
+# free in-house gateway (top-up regeneration included), not Codex quota.
+export EEA_QI_GEN_MODEL="EEA/Inhouse-LLM/gemma-4-31B-it"
+export EEA_QI_QA_MODEL="EEA/Inhouse-LLM/gemma-4-31B-it"
 
 rm -f /tmp/trn_gen_done.flag /tmp/trn_qa_done.flag
 

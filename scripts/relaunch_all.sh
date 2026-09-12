@@ -111,6 +111,10 @@ else
   nohup bash -c '
     cd /Users/razvan/Work/eea-query-intent
     while [ "$(wc -l < data/training/v1/en.raw.jsonl 2>/dev/null || echo 0)" -lt 3000 ]; do sleep 120; done
+    # Training data is study material: run the review (and top-up
+    # regeneration) on the free in-house gateway instead of Codex quota.
+    export EEA_QI_GEN_MODEL="EEA/Inhouse-LLM/gemma-4-31B-it"
+    export EEA_QI_QA_MODEL="EEA/Inhouse-LLM/gemma-4-31B-it"
     uv run python scripts/gpt_train_qa.py en > /tmp/trn_qa_en.log 2>&1
   ' > /tmp/trn_watch_en.log 2>&1 &
   echo $! > .pipeline/enqa.pid

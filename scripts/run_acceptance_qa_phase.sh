@@ -14,6 +14,6 @@ if [ ! -s .pipeline/acc_langs.txt ] || [ "$(tr -d ' ' < .pipeline/acc_langs.txt 
   echo "ERROR: language list missing or broken - exiting for retry"
   exit 1
 fi
-cat .pipeline/acc_langs.txt | tr ' ' '\n' | xargs -L 1 -P 4 -I {} bash scripts/qa_one_lang.sh {}
+cat .pipeline/acc_langs.txt | tr ' ' '\n' | xargs -L 1 -P 8 -I {} bash scripts/qa_one_lang.sh {}
 touch .pipeline/acc_qa_done.flag
 echo "QA phase done $(date)"

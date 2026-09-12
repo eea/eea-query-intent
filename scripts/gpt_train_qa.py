@@ -45,8 +45,8 @@ def main() -> None:
     ]
 
     verdicts: dict[int, dict] = {}
-    for start in range(0, len(rows), 100):
-        chunk = rows[start : start + 100]
+    for start in range(0, len(rows), 200):
+        chunk = rows[start : start + 200]
         numbered = [
             (start + j, rec["intent"], rec["text"]) for j, rec in enumerate(chunk)
         ]

@@ -229,7 +229,13 @@ def call_gpt_raw(prompt: str, tries: int = 3, limit_waits: int = 60) -> dict:
             except Exception:
                 # Non-JSON output: a usage/rate limit or a transient failure
                 # (e.g. contention between parallel workers). Both are handled
-                # the same way: long 5-minute backoff, many waits.
+                # the same way: long 5-minute backoff, many waits. Log the
+                # raw reply once so the failure is diagnosable.
+                print(
+                    f"  non-JSON reply ({len(text)} chars): "
+                    f"{text[:300].strip()!r}",
+                    flush=True,
+                )
                 for wait in range(1, limit_waits + 1):
                     print(
                         f"  GPT call failed (limit/transient), waiting 5 min "

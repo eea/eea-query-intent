@@ -25,11 +25,15 @@ import time
 from pathlib import Path
 
 # Model tiers (Codex credit rates per 1M output tokens: Sol 750, Terra 375,
-# Luna 150). All models draw from the same plan pool, so cheaper models
-# stretch the rolling usage window: high-volume generation runs on Luna,
-# quality-review passes run on Terra. Override via environment if needed.
+# Luna 150). All models draw from the same plan pool, but the per-model
+# message windows differ sharply (Plus, per 5h: Sol 10-100, Terra 25-200,
+# Luna 250-2000), which is the binding constraint in practice: Terra QA
+# workers starved after a short burst while Luna generation kept flowing.
+# So both generation and review run on Luna by default; set
+# EEA_QI_QA_MODEL=openai-codex/gpt-5.6-terra (or -sol) for a stronger
+# reviewer when quota allows.
 GEN_MODEL = os.environ.get("EEA_QI_GEN_MODEL", "openai-codex/gpt-5.6-luna")
-QA_MODEL = os.environ.get("EEA_QI_QA_MODEL", "openai-codex/gpt-5.6-terra")
+QA_MODEL = os.environ.get("EEA_QI_QA_MODEL", "openai-codex/gpt-5.6-luna")
 MODEL = GEN_MODEL
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "data" / "acceptance" / "v1"

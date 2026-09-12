@@ -16,7 +16,7 @@ import json
 import sys
 from pathlib import Path
 
-from gpt_acceptance_gen import NAMES, call_gpt_raw
+from gpt_acceptance_gen import NAMES, QA_MODEL, call_gpt_raw
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data" / "acceptance" / "v1"
@@ -89,7 +89,7 @@ def main() -> None:
                 forbid.add(t)
             forbid_text = "\n".join(f"- {t}" for t in sorted(forbid))
             prompt += f"{i} [{row['intent']}] {row['text']}\nFORBIDDEN (similar existing strings):\n{forbid_text}\n\n"
-        res = call_gpt_raw(prompt)
+        res = call_gpt_raw(prompt, model=QA_MODEL)
         by_i = {
             r["i"]: r["text"].strip()
             for r in res.get("rows", [])

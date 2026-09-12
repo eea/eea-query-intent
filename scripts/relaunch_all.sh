@@ -15,8 +15,14 @@ if [ ! -f .pipeline/en_validation_done.flag ] && ! pgrep -x caffeinate > /dev/nu
 fi
 
 pid_alive() {
-  local pidfile="$1"
-  [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile" 2>/dev/null)" 2>/dev/null
+  local pidfile="$1" pattern="${2:-}"
+  [ -f "$pidfile" ] || return 1
+  local pid
+  pid=$(cat "$pidfile" 2>/dev/null)
+  kill -0 "$pid" 2>/dev/null || return 1
+  # guard against PID reuse: the process must still be the expected one
+  [ -n "$pattern" ] || return 0
+  ps -p "$pid" -o command= 2>/dev/null | grep -q "$pattern"
 }
 
 # 1. acceptance generation: exactly one orchestrator.
@@ -40,7 +46,7 @@ all_raws() {
 
 if all_raws; then
   echo "acceptance generation complete (all 27 raw files)"
-elif pid_alive .pipeline/gen.pid || pgrep -f "run_gen_phase.sh" > /dev/null; then
+elif pid_alive .pipeline/gen.pid "run_gen_phase" || pgrep -f "run_gen_phase.sh" > /dev/null; then
   echo "acceptance generation phase running"
 else
   pkill -f "run_gen_phase.sh" 2>/dev/null
@@ -67,7 +73,7 @@ all_finals() {
 
 if all_finals; then
   echo "acceptance QA phase complete (all 27 final files)"
-elif pid_alive .pipeline/qa.pid \
+elif pid_alive .pipeline/qa.pid "run_acceptance_qa_phase" \
   || pgrep -f "run_acceptance_qa_phase.sh" > /dev/null \
   || pgrep -f "\.venv/bin/python3 scripts/gpt_acceptance_qa.py" > /dev/null; then
   echo "acceptance QA phase running"
@@ -80,7 +86,7 @@ fi
 # 3. English training generation (single instance)
 if [ -f data/training/v1/en.raw.jsonl ] && [ "$(wc -l < data/training/v1/en.raw.jsonl)" -ge 3000 ]; then
   echo "English training generation complete"
-elif pid_alive .pipeline/entrgen.pid; then
+elif pid_alive .pipeline/entrgen.pid "gpt_train_gen"; then
   echo "English training generation running (pid $(cat .pipeline/entrgen.pid))"
 else
   pkill -f "gpt_train_gen.py en" 2>/dev/null
@@ -97,7 +103,7 @@ en_train_done() {
 }
 if en_train_done; then
   echo "English training QA complete (3000 rows)"
-elif pid_alive .pipeline/enqa.pid; then
+elif pid_alive .pipeline/enqa.pid "gpt_train_qa"; then
   echo "English training QA running (pid $(cat .pipeline/enqa.pid))"
 else
   pkill -f "gpt_train_qa.py en" 2>/dev/null
@@ -122,7 +128,7 @@ elif [ -f .pipeline/en_validation_done.flag ]; then
   nohup bash scripts/watch_en_validation.sh > /tmp/watch_en_validation.log 2>&1 &
   echo $! > .pipeline/enval.pid
   echo "re-launched English validation watcher (pid $!)"
-elif pid_alive .pipeline/enval.pid; then
+elif pid_alive .pipeline/enval.pid "watch_en_validation"; then
   echo "English validation watcher running (pid $(cat .pipeline/enval.pid))"
 else
   nohup bash scripts/watch_en_validation.sh > /tmp/watch_en_validation.log 2>&1 &

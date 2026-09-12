@@ -24,7 +24,13 @@ import sys
 import time
 from pathlib import Path
 
-MODEL = "openai-codex/gpt-5.6-sol"
+# Model tiers (Codex credit rates per 1M output tokens: Sol 750, Terra 375,
+# Luna 150). All models draw from the same plan pool, so cheaper models
+# stretch the rolling usage window: high-volume generation runs on Luna,
+# quality-review passes run on Terra. Override via environment if needed.
+GEN_MODEL = os.environ.get("EEA_QI_GEN_MODEL", "openai-codex/gpt-5.6-luna")
+QA_MODEL = os.environ.get("EEA_QI_QA_MODEL", "openai-codex/gpt-5.6-terra")
+MODEL = GEN_MODEL
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "data" / "acceptance" / "v1"
 
@@ -199,7 +205,7 @@ def extract_json(text: str) -> dict:
     return json.loads(text[s : e + 1])
 
 
-def _pi_once(prompt: str) -> str:
+def _pi_once(prompt: str, model: str = MODEL) -> str:
     # Pin the PATH: pi (shebang: #!/usr/bin/env node) must run on a known-good
     # node. Homebrew's node (v25.9.0_2) is broken on this machine (dyld: libllhttp
     # 9.3 missing after an llhttp upgrade), and launchd environments have no
@@ -214,7 +220,7 @@ def _pi_once(prompt: str) -> str:
         [
             "pi",
             "--model",
-            MODEL,
+            model,
             "-p",
             "-nt",
             "-nc",
@@ -231,11 +237,13 @@ def _pi_once(prompt: str) -> str:
     return (out.stdout or "") + "\n" + (out.stderr or "")
 
 
-def call_gpt_raw(prompt: str, tries: int = 3, limit_waits: int = 60) -> dict:
+def call_gpt_raw(
+    prompt: str, tries: int = 3, limit_waits: int = 60, model: str = GEN_MODEL
+) -> dict:
     last_err = None
     for attempt in range(1, tries + 1):
         try:
-            text = _pi_once(prompt)
+            text = _pi_once(prompt, model)
             try:
                 return extract_json(text)
             except Exception:
@@ -244,8 +252,7 @@ def call_gpt_raw(prompt: str, tries: int = 3, limit_waits: int = 60) -> dict:
                 # the same way: long 5-minute backoff, many waits. Log the
                 # raw reply once so the failure is diagnosable.
                 print(
-                    f"  non-JSON reply ({len(text)} chars): "
-                    f"{text[:300].strip()!r}",
+                    f"  non-JSON reply ({len(text)} chars): {text[:300].strip()!r}",
                     flush=True,
                 )
                 for wait in range(1, limit_waits + 1):
@@ -255,7 +262,7 @@ def call_gpt_raw(prompt: str, tries: int = 3, limit_waits: int = 60) -> dict:
                         flush=True,
                     )
                     time.sleep(300)
-                    text = _pi_once(prompt)
+                    text = _pi_once(prompt, model)
                     try:
                         return extract_json(text)
                     except Exception:
@@ -268,11 +275,11 @@ def call_gpt_raw(prompt: str, tries: int = 3, limit_waits: int = 60) -> dict:
     raise RuntimeError(f"GPT call failed after {tries} tries: {last_err}")
 
 
-def call_gpt(prompt: str, tries: int = 3) -> list[str]:
+def call_gpt(prompt: str, tries: int = 3, model: str = GEN_MODEL) -> list[str]:
     last_err = None
     for _ in range(tries):
         try:
-            res = call_gpt_raw(prompt)
+            res = call_gpt_raw(prompt, model=model)
         except Exception as e:  # noqa: BLE001
             last_err = e
             time.sleep(300)

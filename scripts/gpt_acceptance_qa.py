@@ -17,6 +17,7 @@ from pathlib import Path
 
 from gpt_acceptance_gen import (
     NAMES,
+    QA_MODEL,
     build_prompt,
     call_gpt,
     call_gpt_raw,
@@ -67,7 +68,7 @@ def qa_batch(rows: list[tuple[int, str, str]], lang: str) -> dict:
     )
     for i, _intent, text in rows:
         prompt += f"{i} [{_intent}] {text}\n"
-    return call_gpt_raw(prompt)
+    return call_gpt_raw(prompt, model=QA_MODEL)
 
 
 def main() -> None:

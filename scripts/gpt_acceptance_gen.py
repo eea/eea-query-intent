@@ -17,6 +17,7 @@ Usage: uv run python scripts/gpt_acceptance_gen.py <lang> [batch_size]
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -199,6 +200,16 @@ def extract_json(text: str) -> dict:
 
 
 def _pi_once(prompt: str) -> str:
+    # Pin the PATH: pi (shebang: #!/usr/bin/env node) must run on a known-good
+    # node. Homebrew's node (v25.9.0_2) is broken on this machine (dyld: libllhttp
+    # 9.3 missing after an llhttp upgrade), and launchd environments have no
+    # node at all, so prepend the fnm-installed node and the bun bin dir.
+    preferred_path = (
+        "/Users/razvan/.local/share/fnm/node-versions/v22.21.1/installation/bin"
+        ":/Users/razvan/.bun/bin"
+    )
+    env = dict(os.environ)
+    env["PATH"] = preferred_path + ":" + env.get("PATH", "/usr/bin:/bin")
     out = subprocess.run(
         [
             "pi",
@@ -215,6 +226,7 @@ def _pi_once(prompt: str) -> str:
         capture_output=True,
         text=True,
         timeout=600,
+        env=env,
     )
     return (out.stdout or "") + "\n" + (out.stderr or "")
 

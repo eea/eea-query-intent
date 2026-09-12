@@ -22,6 +22,35 @@ ROOT = Path(__file__).resolve().parent.parent
 REPORT_DIR = ROOT / "reports"
 
 
+def progress_path(lang: str) -> Path:
+    return OUT_DIR / f"{lang}.qa_progress.jsonl"
+
+
+def load_progress(lang: str) -> dict[str, dict[int, dict]]:
+    """Return {batch_start: {row_index: verdict}} from prior runs.
+
+    The QA pass is resumable: each completed batch is appended to the
+    progress file, so a killed process restarts where it left off instead
+    of re-paying for already-reviewed batches.
+    """
+    path = progress_path(lang)
+    done: dict[str, dict[int, dict]] = {}
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            done[str(rec["start"])] = {int(k): v for k, v in rec["verdicts"].items()}
+    return done
+
+
+def save_batch_progress(lang: str, start: int, verdicts: dict[int, dict]) -> None:
+    rec = {"start": start, "verdicts": {str(k): v for k, v in verdicts.items()}}
+    with progress_path(lang).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        handle.flush()
+
+
 def final_avoid_set(exclude: set[Path]) -> set[str]:
     seen = set()
     dirs = [d for d in DEDUP_DIRS + [OUT_DIR] if d.exists()]
@@ -44,21 +73,34 @@ def main() -> None:
         if line.strip()
     ]
 
+    progress = load_progress(lang)
     verdicts: dict[int, dict] = {}
+    for batch_verdicts in progress.values():
+        verdicts.update(batch_verdicts)
     for start in range(0, len(rows), 200):
+        if str(start) in progress:
+            print(
+                f"{lang} train-QA batch {start + 1}-"
+                f"{min(start + 200, len(rows))}/{len(rows)} resumed from progress",
+                flush=True,
+            )
+            continue
         chunk = rows[start : start + 200]
         numbered = [
             (start + j, rec["intent"], rec["text"]) for j, rec in enumerate(chunk)
         ]
         res = qa_batch(numbered, lang)
         by_i = {r["i"]: r for r in res.get("rows", [])}
+        batch_verdicts: dict[int, dict] = {}
         for i, _intent, _text in numbered:
             v = by_i.get(i)
-            verdicts[i] = (
+            verdict = (
                 v
                 if v is not None
                 else {"v": "drop", "t": "", "r": "missing-from-output"}
             )
+            batch_verdicts[i] = verdict
+        save_batch_progress(lang, start, batch_verdicts)
         print(
             f"{lang} train-QA batch {start + 1}-{start + len(chunk)}/{len(rows)}",
             flush=True,
@@ -177,6 +219,7 @@ def main() -> None:
         json.dumps(log, indent=2), encoding="utf-8"
     )
     print(f"{lang}: wrote {out_path} counts={counts}", flush=True)
+    progress_path(lang).unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

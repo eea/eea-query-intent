@@ -101,43 +101,56 @@ fi
 en_train_done() {
   [ -f data/training/v1/en.jsonl ] && [ "$(wc -l < data/training/v1/en.jsonl)" -ge 3000 ]
 }
+enqa_job() {
+  launchctl list 2>/dev/null | grep -q "com.razvan.eeaki-trnqa"
+}
 if en_train_done; then
   echo "English training QA complete (3000 rows)"
-elif pid_alive .pipeline/enqa.pid "gpt_train_qa"; then
-  echo "English training QA running (pid $(cat .pipeline/enqa.pid))"
+elif enqa_job; then
+  echo "English training QA running (launchd job)"
 else
+  MATCHES=$(pgrep -f "gpt_train_qa.py en" 2>/dev/null | tr '\n' ' ')
+  echo "enqa: restarting at $(date +%T) (live-matches-before-pkill: ${MATCHES:-none})"
   pkill -f "gpt_train_qa.py en" 2>/dev/null
   sleep 1
-  nohup bash -c '
-    cd /Users/razvan/Work/eea-query-intent
-    while [ "$(wc -l < data/training/v1/en.raw.jsonl 2>/dev/null || echo 0)" -lt 3000 ]; do sleep 120; done
-    # Training data is study material: run the review (and top-up
-    # regeneration) on the free in-house gateway instead of Codex quota.
-    export EEA_QI_GEN_MODEL="EEA/Inhouse-LLM/gemma-4-31B-it"
-    export EEA_QI_QA_MODEL="EEA/Inhouse-LLM/gemma-4-31B-it"
-    uv run python scripts/gpt_train_qa.py en > /tmp/trn_qa_en.log 2>&1
-  ' > /tmp/trn_watch_en.log 2>&1 &
-  echo $! > .pipeline/enqa.pid
-  echo "launched English training QA watcher (pid $!)"
+  launchctl remove com.razvan.eeaki-trnqa 2>/dev/null
+  if launchctl submit -l com.razvan.eeaki-trnqa \
+      -o /tmp/trn_qa_en.log -e /tmp/trn_qa_en.log \
+      -- /bin/bash /Users/razvan/Work/eea-query-intent/scripts/run_en_qa.sh 2>/dev/null; then
+    echo "launched English training QA (launchd job com.razvan.eeaki-trnqa)"
+  else
+    echo "launchctl submit failed - falling back to nohup"
+    nohup bash scripts/run_en_qa.sh > /tmp/trn_qa_en.log 2>&1 &
+    echo $! > .pipeline/enqa.pid
+  fi
 fi
 
 # 5. English validation watcher (single instance). The flag is only valid
 # if the training file it was measured on was complete.
+enval_job() {
+  launchctl list 2>/dev/null | grep -q "com.razvan.eeaki-enval"
+}
 if [ -f .pipeline/en_validation_done.flag ] && en_train_done; then
   echo "English validation complete"
 elif [ -f .pipeline/en_validation_done.flag ]; then
   echo "stale validation flag (training file incomplete) - discarding"
   rm -f .pipeline/en_validation_done.flag
   rm -f .pipeline/enval.pid
-  nohup bash scripts/watch_en_validation.sh > /tmp/watch_en_validation.log 2>&1 &
-  echo $! > .pipeline/enval.pid
-  echo "re-launched English validation watcher (pid $!)"
-elif pid_alive .pipeline/enval.pid "watch_en_validation"; then
-  echo "English validation watcher running (pid $(cat .pipeline/enval.pid))"
+  launchctl remove com.razvan.eeaki-enval 2>/dev/null
+  launchctl submit -l com.razvan.eeaki-enval \
+    -o /tmp/watch_en_validation.log -e /tmp/watch_en_validation.log \
+    -- /bin/bash /Users/razvan/Work/eea-query-intent/scripts/watch_en_validation.sh \
+    || nohup bash scripts/watch_en_validation.sh > /tmp/watch_en_validation.log 2>&1 &
+  echo "re-launched English validation watcher"
+elif enval_job || pid_alive .pipeline/enval.pid "watch_en_validation"; then
+  echo "English validation watcher running"
 else
-  nohup bash scripts/watch_en_validation.sh > /tmp/watch_en_validation.log 2>&1 &
-  echo $! > .pipeline/enval.pid
-  echo "launched English validation watcher (pid $!)"
+  launchctl remove com.razvan.eeaki-enval 2>/dev/null
+  launchctl submit -l com.razvan.eeaki-enval \
+    -o /tmp/watch_en_validation.log -e /tmp/watch_en_validation.log \
+    -- /bin/bash /Users/razvan/Work/eea-query-intent/scripts/watch_en_validation.sh \
+    || nohup bash scripts/watch_en_validation.sh > /tmp/watch_en_validation.log 2>&1 &
+  echo "launched English validation watcher"
 fi
 
 echo "relaunch checked $(date)"

@@ -10,4 +10,4 @@ dist/
 *.egg-info/
 reports/
 models/
-*.raw.jsonl
+.pipeline/

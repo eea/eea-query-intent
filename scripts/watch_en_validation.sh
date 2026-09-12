@@ -1,7 +1,7 @@
 #!/bin/bash
 # Self-driving watcher: once the English training corpus is QA'd
-# (data/training/v1/en.jsonl exists), run the full English validation
-# experiment (retrain + acceptance sweep) and save the results.
+# (data/training/v1/en.jsonl with all 3000 rows), run the full English
+# validation experiment (retrain + acceptance sweep) and save the results.
 # Retries up to 3 times on failure.
 #
 # Outputs:
@@ -11,7 +11,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-while [ ! -f data/training/v1/en.jsonl ]; do sleep 120; done
+while [ "$(wc -l < data/training/v1/en.jsonl 2>/dev/null || echo 0)" -lt 3000 ]; do sleep 120; done
 
 for attempt in 1 2 3; do
   STAMP=$(date +%Y%m%d-%H%M)

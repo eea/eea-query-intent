@@ -224,23 +224,29 @@ def call_gpt_raw(prompt: str, tries: int = 3, limit_waits: int = 60) -> dict:
     for attempt in range(1, tries + 1):
         try:
             text = _pi_once(prompt)
-            if "usage limit" in text.lower():
+            try:
+                return extract_json(text)
+            except Exception:
+                # Non-JSON output: a usage/rate limit or a transient failure
+                # (e.g. contention between parallel workers). Both are handled
+                # the same way: long 5-minute backoff, many waits.
                 for wait in range(1, limit_waits + 1):
                     print(
-                        f"  usage limit hit, waiting 5 min ({wait}/{limit_waits})",
+                        f"  GPT call failed (limit/transient), waiting 5 min "
+                        f"({wait}/{limit_waits})",
                         flush=True,
                     )
                     time.sleep(300)
                     text = _pi_once(prompt)
-                    if "usage limit" not in text.lower():
-                        break
-                else:
-                    raise RuntimeError("usage limit did not clear after all waits")
-            return extract_json(text)
+                    try:
+                        return extract_json(text)
+                    except Exception:
+                        continue
+                raise RuntimeError("GPT call failed after all waits") from last_err
         except Exception as e:  # noqa: BLE001
             last_err = e
             if attempt < tries:
-                time.sleep(15)
+                time.sleep(300)
     raise RuntimeError(f"GPT call failed after {tries} tries: {last_err}")
 
 
@@ -251,7 +257,7 @@ def call_gpt(prompt: str, tries: int = 3) -> list[str]:
             res = call_gpt_raw(prompt)
         except Exception as e:  # noqa: BLE001
             last_err = e
-            time.sleep(15)
+            time.sleep(300)
             continue
         rows = [
             r.strip() for r in res.get("rows", []) if isinstance(r, str) and r.strip()

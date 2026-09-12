@@ -22,12 +22,12 @@ ROOT = Path(__file__).resolve().parent.parent
 REPORT_DIR = ROOT / "reports"
 
 
-def final_avoid_set(exclude: Path) -> set[str]:
+def final_avoid_set(exclude: set[Path]) -> set[str]:
     seen = set()
     dirs = [d for d in DEDUP_DIRS + [OUT_DIR] if d.exists()]
     for d in dirs:
         for path in d.glob("*.jsonl"):
-            if path == exclude:
+            if path in exclude:
                 continue
             for line in path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
@@ -113,8 +113,9 @@ def main() -> None:
         )
 
     # final safety: dedupe, cap word count, drop anything that collides with
-    # another dataset (incl. the acceptance holdout), prune to target
-    avoid = final_avoid_set(OUT_DIR / f"{lang}.jsonl")
+    # another dataset (incl. the acceptance holdout), prune to target.
+    # The raw source file is excluded: its texts ARE the kept rows.
+    avoid = final_avoid_set({OUT_DIR / f"{lang}.jsonl", OUT_DIR / f"{lang}.raw.jsonl"})
     final: dict[str, list[str]] = {}
     leaked = 0
     for intent, texts in kept.items():
@@ -128,6 +129,26 @@ def main() -> None:
             seen.add(key)
             clean.append(t)
         final[intent] = clean[: TRAIN_QUOTAS[intent]]
+
+    counts = {intent: len(texts) for intent, texts in final.items()}
+    log = {
+        "language": lang,
+        "raw_rows": len(rows),
+        "verdicts": stats,
+        "topups": topups,
+        "leaked_dropped": leaked,
+        "final_counts": counts,
+        "complete": all(counts[i] == TRAIN_QUOTAS[i] for i in TRAIN_QUOTAS),
+    }
+    if not log["complete"]:
+        # Do not write a truncated file: a partial output would look like a
+        # finished dataset to the pipeline.
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        (REPORT_DIR / f"train_qa_{lang}.json").write_text(
+            json.dumps(log, indent=2), encoding="utf-8"
+        )
+        print(f"{lang}: below target after QA: {counts}", flush=True)
+        sys.exit(f"{lang}: below target after QA: {counts}")
 
     out_path = OUT_DIR / f"{lang}.jsonl"
     with out_path.open("w", encoding="utf-8") as handle:
@@ -151,23 +172,11 @@ def main() -> None:
                     + "\n"
                 )
 
-    counts = {intent: len(texts) for intent, texts in final.items()}
-    log = {
-        "language": lang,
-        "raw_rows": len(rows),
-        "verdicts": stats,
-        "topups": topups,
-        "leaked_dropped": leaked,
-        "final_counts": counts,
-        "complete": all(counts[i] == TRAIN_QUOTAS[i] for i in TRAIN_QUOTAS),
-    }
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     (REPORT_DIR / f"train_qa_{lang}.json").write_text(
         json.dumps(log, indent=2), encoding="utf-8"
     )
     print(f"{lang}: wrote {out_path} counts={counts}", flush=True)
-    if not log["complete"]:
-        sys.exit(f"{lang}: below target after QA: {counts}")
 
 
 if __name__ == "__main__":

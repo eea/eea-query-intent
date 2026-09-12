@@ -160,6 +160,25 @@ def main() -> None:
             clean.append(t)
         final[intent] = clean[: TARGETS[intent]]
 
+    counts = {intent: len(texts) for intent, texts in final.items()}
+    log = {
+        "language": lang,
+        "raw_rows": len(rows),
+        "verdicts": stats,
+        "topups": topups,
+        "final_counts": counts,
+        "complete": all(counts[i] == TARGETS[i] for i in TARGETS),
+    }
+    if not log["complete"]:
+        # Do not write a truncated shard: a partial output would look like a
+        # finished acceptance set to the pipeline.
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        (REPORT_DIR / f"acceptance_qa_{lang}.json").write_text(
+            json.dumps(log, indent=2), encoding="utf-8"
+        )
+        print(f"{lang}: below target after QA: {counts}", flush=True)
+        sys.exit(f"{lang}: below target after QA: {counts}")
+
     out_path = DATA_DIR / f"{lang}.jsonl"
     with out_path.open("w", encoding="utf-8") as handle:
         for intent in ("question", "exploratory", "claim", "retrieval", "unknown"):
@@ -182,22 +201,11 @@ def main() -> None:
                     + "\n"
                 )
 
-    counts = {intent: len(texts) for intent, texts in final.items()}
-    log = {
-        "language": lang,
-        "raw_rows": len(rows),
-        "verdicts": stats,
-        "topups": topups,
-        "final_counts": counts,
-        "complete": all(counts[i] == TARGETS[i] for i in TARGETS),
-    }
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     (REPORT_DIR / f"acceptance_qa_{lang}.json").write_text(
         json.dumps(log, indent=2), encoding="utf-8"
     )
     print(f"{lang}: wrote {out_path} counts={counts}", flush=True)
-    if not log["complete"]:
-        sys.exit(f"{lang}: below target after QA: {counts}")
 
 
 if __name__ == "__main__":

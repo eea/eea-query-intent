@@ -190,6 +190,21 @@ def main() -> None:
     # top-up any intent below target (max 4 cycles); reject top-up rows
     # that collide with the training corpus so every slot gets a fresh row
     avoid = corpus_avoid_set()
+
+    # Sanitize BEFORE the top-up so it sees the true post-filter count:
+    # the final pass below drops exactly these shapes, and if the top-up
+    # ran first it would silently fall below target.
+    for intent in kept:
+        seen = set()
+        clean = []
+        for t in kept[intent]:
+            key = t.casefold()
+            if not t or len(t.split()) > 20 or key in seen or key in avoid:
+                continue
+            seen.add(key)
+            clean.append(t)
+        kept[intent] = clean
+
     topups = 0
     for _cycle in range(4):
         shortfalls = {

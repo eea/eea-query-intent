@@ -134,6 +134,20 @@ def main() -> None:
     # caused below-target restart loops).
     avoid = final_avoid_set({OUT_DIR / f"{lang}.jsonl", OUT_DIR / f"{lang}.raw.jsonl"})
 
+    # Sanitize kept BEFORE the top-up so it sees the true post-filter
+    # count: the final pass below drops exactly these shapes, and if the
+    # top-up ran first it would silently fall below target.
+    for intent in kept:
+        seen = set()
+        clean = []
+        for t in kept[intent]:
+            key = t.casefold()
+            if not t or len(t.split()) > 20 or key in seen or key in avoid:
+                continue
+            seen.add(key)
+            clean.append(t)
+        kept[intent] = clean
+
     topups = 0
     for _cycle in range(4):
         need = {

@@ -64,6 +64,7 @@ def generate_intent(
 ) -> list[str]:
     rows: list[str] = []
     seen = set(avoid)
+    stale = 0
     while len(rows) < n:
         need = min(batch, n - len(rows))
         got = call_gpt(build_prompt(lang, intent, need))
@@ -77,6 +78,21 @@ def generate_intent(
                     break
         rows.extend(fresh)
         print(f"{lang}/{intent} {len(rows)}/{n}", flush=True)
+        # Escape hatch: the model can keep re-emitting phrases it already
+        # produced (which this loop cannot show it), stalling the final row
+        # forever. After 5 consecutive no-progress batches accept the small
+        # shortfall; the QA top-up plus quota tolerance absorb it.
+        if not fresh:
+            stale += 1
+            if stale >= 5:
+                print(
+                    f"{lang}/{intent}: 5 consecutive no-progress batches - "
+                    f"accepting {len(rows)}/{n}",
+                    flush=True,
+                )
+                break
+        else:
+            stale = 0
     return rows[:n]
 
 

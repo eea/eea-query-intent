@@ -259,13 +259,20 @@ def call_gpt_raw(
                     f"  non-JSON reply ({len(text)} chars): {text[:300].strip()!r}",
                     flush=True,
                 )
-                for wait in range(1, limit_waits + 1):
+                # A reply that starts like JSON but fails to parse is almost
+                # always a truncated generation, not a quota limit: retry
+                # fast. Anything else (rate-limit text, errors, empty) gets
+                # the long 5-minute backoff.
+                partial = text.lstrip()[:1] in ("{", "[")
+                wait_secs = 15 if partial else 300
+                max_waits = 20 if partial else limit_waits
+                for wait in range(1, max_waits + 1):
                     print(
-                        f"  GPT call failed (limit/transient), waiting 5 min "
-                        f"({wait}/{limit_waits})",
+                        f"  GPT call failed (limit/transient), "
+                        f"waiting {wait_secs}s ({wait}/{max_waits})",
                         flush=True,
                     )
-                    time.sleep(300)
+                    time.sleep(wait_secs)
                     text = _pi_once(prompt, model)
                     try:
                         return extract_json(text)
@@ -318,6 +325,7 @@ def generate_intent(
 ) -> list[str]:
     rows: list[str] = []
     seen = set(avoid or set())
+    stale = 0
     while len(rows) < n:
         need = min(batch, n - len(rows))
         got = call_gpt(build_prompt(lang, intent, need))
@@ -332,6 +340,21 @@ def generate_intent(
                     break
         rows.extend(fresh)
         print(f"{lang}/{intent} {len(rows)}/{n}", flush=True)
+        # Escape hatch: the model can keep re-emitting phrases it already
+        # produced (which this loop cannot show it), stalling the final row
+        # forever. After 5 consecutive no-progress batches accept the small
+        # shortfall; the QA top-up plus quota tolerance absorb it.
+        if not fresh:
+            stale += 1
+            if stale >= 5:
+                print(
+                    f"{lang}/{intent}: 5 consecutive no-progress batches - "
+                    f"accepting {len(rows)}/{n}",
+                    flush=True,
+                )
+                break
+        else:
+            stale = 0
     return rows[:n]
 
 

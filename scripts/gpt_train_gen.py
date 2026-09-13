@@ -53,7 +53,9 @@ def existing_texts() -> set[str]:
         for path in d.glob("*.jsonl"):
             for line in path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
-                    seen.add(json.loads(line)["text"].casefold())
+                    rec = json.loads(line)
+                    if isinstance(rec, dict) and "text" in rec:
+                        seen.add(rec["text"].casefold())
     return seen
 
 

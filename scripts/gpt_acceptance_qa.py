@@ -29,7 +29,9 @@ REPORT_DIR = ROOT / "reports"
 
 
 def progress_path(lang: str) -> Path:
-    return DATA_DIR / f"{lang}.qa_progress.jsonl"
+    # Deliberately NOT a .jsonl extension: corpus readers glob *.jsonl in
+    # these data dirs and expect a "text" key on every row.
+    return DATA_DIR / f"{lang}.qa_progress"
 
 
 def load_progress(lang: str) -> dict[str, dict[int, dict]]:
@@ -100,6 +102,31 @@ def qa_batch(rows: list[tuple[int, str, str]], lang: str) -> dict:
     return call_gpt_raw(prompt, model=QA_MODEL)
 
 
+def corpus_avoid_set() -> set[str]:
+    """Texts a new acceptance row must stay disjoint from (training data).
+
+    Used to filter top-up rows at generation time: a top-up row that
+    duplicates training text would be rejected by
+    repair_acceptance_overlaps.py later, wasting the top-up slot.
+    """
+    seen = set()
+    for d in (
+        ROOT / "data" / "expanded_v2",
+        ROOT / "data" / "english_only",
+        ROOT / "data" / "seed",
+        ROOT / "data" / "multilingual" / "v1",
+    ):
+        if not d.exists():
+            continue
+        for path in d.glob("*.jsonl"):
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    rec = json.loads(line)
+                    if isinstance(rec, dict) and "text" in rec:
+                        seen.add(rec["text"].casefold())
+    return seen
+
+
 def main() -> None:
     lang = sys.argv[1]
     raw_path = DATA_DIR / f"{lang}.raw.jsonl"
@@ -160,9 +187,11 @@ def main() -> None:
         else:
             stats["drop"] += 1
 
-    # top-up any intent below target (max 2 cycles)
+    # top-up any intent below target (max 4 cycles); reject top-up rows
+    # that collide with the training corpus so every slot gets a fresh row
+    avoid = corpus_avoid_set()
     topups = 0
-    for _cycle in range(2):
+    for _cycle in range(4):
         shortfalls = {
             intent: TARGETS[intent] - len(texts) for intent, texts in kept.items()
         }
@@ -180,7 +209,7 @@ def main() -> None:
                 v = by_i.get(j)
                 if v and v.get("v") in ("ok", "fix"):
                     t = (v.get("t") or text).strip()
-                    if t and t.casefold() not in seen:
+                    if t and t.casefold() not in seen and t.casefold() not in avoid:
                         kept[intent].append(t)
                         seen.add(t.casefold())
                         topups += 1

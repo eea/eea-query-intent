@@ -23,7 +23,9 @@ REPORT_DIR = ROOT / "reports"
 
 
 def progress_path(lang: str) -> Path:
-    return OUT_DIR / f"{lang}.qa_progress.jsonl"
+    # Deliberately NOT a .jsonl extension: corpus readers glob *.jsonl in
+    # these data dirs and expect a "text" key on every row.
+    return OUT_DIR / f"{lang}.qa_progress"
 
 
 def load_progress(lang: str) -> dict[str, dict[int, dict]]:
@@ -60,7 +62,9 @@ def final_avoid_set(exclude: set[Path]) -> set[str]:
                 continue
             for line in path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
-                    seen.add(json.loads(line)["text"].casefold())
+                    rec = json.loads(line)
+                    if isinstance(rec, dict) and "text" in rec:
+                        seen.add(rec["text"].casefold())
     return seen
 
 
@@ -124,8 +128,14 @@ def main() -> None:
         else:
             stats["drop"] += 1
 
+    # Compute the final safety pass's avoid set BEFORE the top-up so
+    # top-up rows that collide with existing corpus texts are rejected at
+    # generation time instead of being silently dropped at the end (that
+    # caused below-target restart loops).
+    avoid = final_avoid_set({OUT_DIR / f"{lang}.jsonl", OUT_DIR / f"{lang}.raw.jsonl"})
+
     topups = 0
-    for _cycle in range(2):
+    for _cycle in range(4):
         need = {
             intent: TRAIN_QUOTAS[intent] - len(texts)
             for intent, texts in kept.items()
@@ -144,7 +154,7 @@ def main() -> None:
                 v = by_i.get(j)
                 if v and v.get("v") in ("ok", "fix"):
                     t = (v.get("t") or text).strip()
-                    if t and t.casefold() not in seen:
+                    if t and t.casefold() not in seen and t.casefold() not in avoid:
                         kept[intent].append(t)
                         seen.add(t.casefold())
                         topups += 1
@@ -154,10 +164,10 @@ def main() -> None:
             flush=True,
         )
 
-    # final safety: dedupe, cap word count, drop anything that collides with
-    # another dataset (incl. the acceptance holdout), prune to target.
-    # The raw source file is excluded: its texts ARE the kept rows.
-    avoid = final_avoid_set({OUT_DIR / f"{lang}.jsonl", OUT_DIR / f"{lang}.raw.jsonl"})
+    # final safety: dedupe, cap word count, drop anything that collides
+    # with another dataset (incl. the acceptance holdout), prune to target.
+    # (avoid was computed before the top-up and is still valid: the top-up
+    # only adds rows that are already outside it.)
     final: dict[str, list[str]] = {}
     leaked = 0
     for intent, texts in kept.items():

@@ -11,3 +11,4 @@ dist/
 reports/
 models/
 .pipeline/
+*.qa_progress

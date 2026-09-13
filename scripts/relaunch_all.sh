@@ -105,6 +105,9 @@ enqa_job() {
   launchctl list 2>/dev/null | grep -q "com.razvan.eeaki-trnqa"
 }
 if en_train_done; then
+  # launchctl submit creates KEEPALIVE jobs on this macOS: remove the job
+  # once the work is done, or launchd restarts the finished worker forever.
+  launchctl remove com.razvan.eeaki-trnqa 2>/dev/null
   echo "English training QA complete (3000 rows)"
 elif enqa_job; then
   echo "English training QA running (launchd job)"

@@ -156,4 +156,51 @@ else
   echo "launched English validation watcher"
 fi
 
+# 6. 27-language training corpus phase (run_train_phase.sh).
+# Completion: all 28 training finals (en + 27) with 3000 rows each.
+trn_all_done() {
+  [ -f data/training/v1/en.jsonl ] && [ "$(wc -l < data/training/v1/en.jsonl)" -ge 3000 ] || return 1
+  [ -f .pipeline/trn_langs.txt ] || return 1
+  for lang in $(cat .pipeline/trn_langs.txt); do
+    [ -f "data/training/v1/${lang}.jsonl" ] && \
+      [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 3000 ] || return 1
+  done
+}
+trn_phase_running() {
+  pgrep -f "run_train_phase.sh" > /dev/null 2>&1 || \
+    pgrep -f "gpt_train_gen.py" > /dev/null 2>&1 || \
+    pgrep -f "gpt_train_qa.py" > /dev/null 2>&1
+}
+if trn_all_done; then
+  echo "training corpus complete (all 28 languages)"
+elif trn_phase_running; then
+  echo "training corpus phase running"
+else
+  MATCHES=$( { pgrep -f "gpt_train_gen.py"; pgrep -f "gpt_train_qa.py"; } 2>/dev/null | tr '\n' ' ')
+  echo "trn: restarting at $(date +%T) (live-matches-before-pkill: ${MATCHES:-none})"
+  pkill -f "gpt_train_gen.py" 2>/dev/null
+  pkill -f "gpt_train_qa.py" 2>/dev/null
+  sleep 1
+  nohup bash scripts/run_train_phase.sh > /tmp/trn_phase_orch.log 2>&1 &
+  echo $! > .pipeline/trnphase.pid
+  echo "launched training corpus phase (pid $!)"
+fi
+
+# 7. Final build chain (run_final_build.sh). Fires when the training
+# corpus AND the acceptance exam (all 28 shards incl. en) are complete.
+acceptance_all_done() {
+  all_finals && [ -f data/acceptance/v1/en.jsonl ]
+}
+if [ -f .pipeline/final_build_done.flag ]; then
+  echo "final build complete"
+elif pgrep -f "run_final_build.sh" > /dev/null 2>&1; then
+  echo "final build running"
+elif trn_all_done && acceptance_all_done; then
+  nohup bash scripts/run_final_build.sh > /tmp/final_build_orch.log 2>&1 &
+  echo $! > .pipeline/finalbuild.pid
+  echo "launched final build (pid $!)"
+else
+  echo "final build waiting (training or acceptance incomplete)"
+fi
+
 echo "relaunch checked $(date)"

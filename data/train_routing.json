@@ -1,0 +1,164 @@
+{
+  "bg": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.2,
+    "reason": "probe"
+  },
+  "cs": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.28,
+    "reason": "probe"
+  },
+  "da": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.04,
+    "reason": "probe"
+  },
+  "de": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.12,
+    "reason": "probe"
+  },
+  "el": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.28,
+    "reason": "probe"
+  },
+  "es": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.04,
+    "reason": "probe"
+  },
+  "et": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.6,
+    "reason": "probe"
+  },
+  "fi": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.2,
+    "reason": "probe"
+  },
+  "fr": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.12,
+    "reason": "probe"
+  },
+  "ga": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 1.0,
+    "reason": "probe"
+  },
+  "hr": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.16,
+    "reason": "probe"
+  },
+  "hu": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.64,
+    "reason": "probe"
+  },
+  "is": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.72,
+    "reason": "probe"
+  },
+  "it": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.12,
+    "reason": "probe"
+  },
+  "lt": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.52,
+    "reason": "probe"
+  },
+  "lv": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.6,
+    "reason": "probe"
+  },
+  "mt": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.84,
+    "reason": "probe"
+  },
+  "nb": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.16,
+    "reason": "probe"
+  },
+  "nl": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.04,
+    "reason": "probe"
+  },
+  "nn": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.2,
+    "reason": "probe"
+  },
+  "pl": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.12,
+    "reason": "probe"
+  },
+  "pt": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.24,
+    "reason": "probe"
+  },
+  "ro": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.04,
+    "reason": "probe"
+  },
+  "sk": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.24,
+    "reason": "probe"
+  },
+  "sl": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.48,
+    "reason": "probe"
+  },
+  "sv": {
+    "gen_model": "openai-codex/gpt-5.6-luna",
+    "qa_model": "openai-codex/gpt-5.6-luna",
+    "flaw_rate": 0.28,
+    "reason": "probe"
+  },
+  "tr": {
+    "gen_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "qa_model": "EEA/Inhouse-LLM/gemma-4-31B-it",
+    "flaw_rate": 0.04,
+    "reason": "probe"
+  }
+}

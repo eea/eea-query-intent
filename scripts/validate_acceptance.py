@@ -43,6 +43,15 @@ EXISTING_FILES = (
     "data/seed/english.jsonl",
     "data/multilingual/v1/test.jsonl",
 )
+# plus every per-language training corpus final (the 3000-row corpora in
+# data/training/v1) - discovered dynamically so new languages are covered
+def training_finals() -> tuple[str, ...]:
+    d = ROOT / "data" / "training" / "v1"
+    return tuple(
+        str(p.relative_to(ROOT))
+        for p in sorted(d.glob("*.jsonl"))
+        if not p.name.endswith(".raw.jsonl")
+    )
 
 # Per-language allowed letter ranges (besides ASCII letters/digits and the
 # small Unicode punctuation allow-list).
@@ -51,15 +60,18 @@ GREEK = frozenset(range(0x0370, 0x0400))
 LATIN = (
     frozenset(range(0x0041, 0x005B))
     | frozenset(range(0x0061, 0x007B))
-    | frozenset(range(0x00C0, 0x0250))
+    # Latin-1 punctuation/symbols (¿ ¡ ° ± µ · …) + Latin Extended
+    | frozenset(range(0x00A0, 0x0250))
+    # spacing modifier letters (standalone diacritics such as ˇ ˚ ˛)
+    | frozenset(range(0x02B0, 0x0300))
+    # combining diacritical marks (decomposed sequences)
+    | frozenset(range(0x0300, 0x0370))
 )
 PUNCT = (
     frozenset(
         range(0x0020, 0x007F)  # ASCII (letters handled separately)
     )
-    | frozenset(range(0x2010, 0x2028))
-    | frozenset(range(0x2018, 0x201F))
-    | frozenset(range(0x2013, 0x2015))
+    | frozenset(range(0x2010, 0x205F))  # general punctuation
 )
 
 
@@ -106,11 +118,15 @@ def main() -> None:
     args = parser.parse_args()
 
     shards = sorted(
-        p for p in DATA_DIR.glob("*.jsonl") if not p.name.endswith(".raw.jsonl")
+        p
+        for p in DATA_DIR.glob("*.jsonl")
+        if not p.name.endswith(".raw.jsonl") and p.stem != "test"
     )
     if not shards:
         sys.exit("no acceptance shards found in data/acceptance/v1")
 
+    global EXISTING_FILES
+    EXISTING_FILES = EXISTING_FILES + training_finals()
     existing_texts, existing_templates = load_existing()
     errors: list[str] = []
     all_rows: list[dict] = []

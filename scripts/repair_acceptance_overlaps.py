@@ -30,6 +30,15 @@ EXISTING_FILES = (
     "data/multilingual/v1/test.jsonl",
 )
 
+def training_finals() -> tuple[str, ...]:
+    d = ROOT / "data" / "training" / "v1"
+    return tuple(
+        str(p.relative_to(ROOT))
+        for p in sorted(d.glob("*.jsonl"))
+        if not p.name.endswith(".raw.jsonl")
+    )
+
+
 PROMPT_TMPL = """You are a native @NAME@ speaker. We are building a held-out evaluation corpus of search-box queries for the European Environment Agency website, and the following @N@ queries (each with its intent label) collide with strings that were already used in the model's training data. For each one, generate ONE replacement query with the same intent and similar shape, in @NAME@.
 
 Rules:
@@ -46,7 +55,7 @@ Rows:
 
 def load_existing() -> set[str]:
     texts: set[str] = set()
-    for rel in EXISTING_FILES:
+    for rel in EXISTING_FILES + training_finals():
         path = ROOT / rel
         for line in path.read_text(encoding="utf-8").splitlines():
             if line.strip():

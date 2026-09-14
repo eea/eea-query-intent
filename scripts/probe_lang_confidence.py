@@ -99,9 +99,7 @@ def probe_one(lang: str) -> dict:
         "flawed": flawed,
         "flaw_rate": round(rate, 3),
         "routed": routed,
-        "rows": [
-            {"text": t, "ok": v} for t, v in zip(rows, verdicts, strict=True)
-        ],
+        "rows": [{"text": t, "ok": v} for t, v in zip(rows, verdicts, strict=True)],
     }
 
 
@@ -155,9 +153,7 @@ def main() -> None:
 
     reports = ROOT / "reports"
     reports.mkdir(exist_ok=True)
-    with (reports / "lang_confidence_probe.json").open(
-        "w", encoding="utf-8"
-    ) as h:
+    with (reports / "lang_confidence_probe.json").open("w", encoding="utf-8") as h:
         json.dump(
             {
                 "threshold": FLAW_THRESHOLD,

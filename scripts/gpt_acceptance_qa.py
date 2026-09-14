@@ -58,6 +58,7 @@ def save_batch_progress(lang: str, start: int, verdicts: dict[int, dict]) -> Non
         handle.write(json.dumps(rec, ensure_ascii=False) + "\n")
         handle.flush()
 
+
 TARGETS = {
     "question": 150,
     "exploratory": 120,
@@ -260,9 +261,13 @@ def main() -> None:
     # loud warning; the evaluate CLI's count gates (300+ per side) are far
     # below it, so the exam's statistics are unaffected.
     tolerated = {
-        intent: short for intent, short in shortfall.items() if counts[intent] >= 0.99 * TARGETS[intent]
+        intent: short
+        for intent, short in shortfall.items()
+        if counts[intent] >= 0.99 * TARGETS[intent]
     }
-    hard = {intent: short for intent, short in shortfall.items() if intent not in tolerated}
+    hard = {
+        intent: short for intent, short in shortfall.items() if intent not in tolerated
+    }
     log = {
         "language": lang,
         "raw_rows": len(rows),
@@ -273,7 +278,10 @@ def main() -> None:
         "complete": not hard,
     }
     if tolerated:
-        print(f"{lang}: WARNING shortfall below quota (tolerated): {tolerated}", flush=True)
+        print(
+            f"{lang}: WARNING shortfall below quota (tolerated): {tolerated}",
+            flush=True,
+        )
     if hard:
         # Do not write a truncated shard: a partial output would look like a
         # finished acceptance set to the pipeline.

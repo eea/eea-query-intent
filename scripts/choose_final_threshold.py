@@ -26,8 +26,20 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from sweep_acceptance import regate  # noqa: E402
 
 CANDIDATES = [
-    0.80, 0.82, 0.84, 0.85, 0.86, 0.88, 0.90, 0.92,
-    0.94, 0.95, 0.96, 0.97, 0.98, 0.99,
+    0.80,
+    0.82,
+    0.84,
+    0.85,
+    0.86,
+    0.88,
+    0.90,
+    0.92,
+    0.94,
+    0.95,
+    0.96,
+    0.97,
+    0.98,
+    0.99,
 ]
 MAX_WORST_FP = 0.01
 FALLBACK = 0.98
@@ -41,10 +53,18 @@ def measure(gold: Path, preds: Path, thr: float) -> dict:
     try:
         res = subprocess.run(
             [
-                sys.executable, "-m", "eea_query_intent.cli", "evaluate",
-                "--gold", str(gold), "--predictions", tmp.name,
+                sys.executable,
+                "-m",
+                "eea_query_intent.cli",
+                "evaluate",
+                "--gold",
+                str(gold),
+                "--predictions",
+                tmp.name,
             ],
-            capture_output=True, text=True, cwd=ROOT,
+            capture_output=True,
+            text=True,
+            cwd=ROOT,
         )
         report = json.loads(res.stdout)
     finally:

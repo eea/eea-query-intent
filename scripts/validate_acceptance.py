@@ -43,6 +43,8 @@ EXISTING_FILES = (
     "data/seed/english.jsonl",
     "data/multilingual/v1/test.jsonl",
 )
+
+
 # plus every per-language training corpus final (the 3000-row corpora in
 # data/training/v1) - discovered dynamically so new languages are covered
 def training_finals() -> tuple[str, ...]:
@@ -52,6 +54,7 @@ def training_finals() -> tuple[str, ...]:
         for p in sorted(d.glob("*.jsonl"))
         if not p.name.endswith(".raw.jsonl")
     )
+
 
 # Per-language allowed letter ranges (besides ASCII letters/digits and the
 # small Unicode punctuation allow-list).

@@ -64,9 +64,7 @@ def running_procs() -> dict[str, list[str]]:
         "run_acceptance_qa_phase.sh",
         "eea_query_intent.service",
     ):
-        res = subprocess.run(
-            ["pgrep", "-fl", pattern], capture_output=True, text=True
-        )
+        res = subprocess.run(["pgrep", "-fl", pattern], capture_output=True, text=True)
         langs = []
         for line in res.stdout.splitlines():
             parts = line.split()
@@ -156,9 +154,7 @@ def final_build_state() -> dict:
 
 def service_health() -> dict:
     try:
-        with urllib.request.urlopen(
-            "http://127.0.0.1:8100/health", timeout=3
-        ) as resp:
+        with urllib.request.urlopen("http://127.0.0.1:8100/health", timeout=3) as resp:
             return json.loads(resp.read().decode())
     except Exception:
         return {"status": "unavailable"}
@@ -168,11 +164,11 @@ def build_status() -> dict:
     procs = running_procs()
     try:
         from eea_query_intent.languages import SUPPORTED_LANGUAGE_CODES
+
         langs = sorted(SUPPORTED_LANGUAGE_CODES)
     except Exception:
         langs = sorted(
-            p.stem
-            for p in (ROOT / "data" / "translations").glob("*.jsonl")
+            p.stem for p in (ROOT / "data" / "translations").glob("*.jsonl")
         ) + ["en"]
         langs = sorted(set(langs))
 
@@ -187,8 +183,10 @@ def build_status() -> dict:
     for lang in langs:
         st = training_state(lang, procs)
         model = (
-            "gpt" if routing.get(lang, {}).get("gen_model", "") and
-            "gpt" in routing[lang]["gen_model"] else "inhouse"
+            "gpt"
+            if routing.get(lang, {}).get("gen_model", "")
+            and "gpt" in routing[lang]["gen_model"]
+            else "inhouse"
         )
         st["model"] = model
         # While GPT is paused (user needs the Codex quota), GPT-routed
@@ -215,7 +213,8 @@ def build_status() -> dict:
             "agents": agents,
         },
         "train_phase_running": bool(
-            procs.get("run_train_phase.sh") or procs.get("bash scripts/train_one_lang.sh")
+            procs.get("run_train_phase.sh")
+            or procs.get("bash scripts/train_one_lang.sh")
         ),
         "gpt_paused": gpt_paused,
     }
@@ -416,9 +415,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?", 1)[0]
         if path == "/api/status":
-            self._send(
-                json.dumps(build_status()).encode(), "application/json"
-            )
+            self._send(json.dumps(build_status()).encode(), "application/json")
         elif path in ("/", "/index.html"):
             self._send(PAGE.encode(), "text/html; charset=utf-8")
         else:

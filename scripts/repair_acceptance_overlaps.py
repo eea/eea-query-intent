@@ -30,6 +30,7 @@ EXISTING_FILES = (
     "data/multilingual/v1/test.jsonl",
 )
 
+
 def training_finals() -> tuple[str, ...]:
     d = ROOT / "data" / "training" / "v1"
     return tuple(

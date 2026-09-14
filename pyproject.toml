@@ -49,3 +49,5 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 # GPT acceptance-corpus scripts hold long, unsplit prompt string literals.
 "scripts/gpt_acceptance_*.py" = ["E501"]
 "scripts/repair_acceptance_overlaps.py" = ["E501"]
+# The temporary status dashboard embeds a full HTML/CSS/JS page as one literal.
+"scripts/status_dashboard.py" = ["E501"]

@@ -15,6 +15,9 @@ cd "$(dirname "$0")/.."
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 exec >> /tmp/final_build.log 2>&1
 
+# flag guard: a KeepAlive restart must not rerun a finished build
+[ -f .pipeline/final_build_done.flag ] && exit 0
+
 echo "=== final build started $(date) ==="
 
 uv run python scripts/validate_acceptance.py --merge \

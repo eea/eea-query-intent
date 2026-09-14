@@ -234,6 +234,7 @@ acceptance_all_done() {
   all_finals && [ -f data/acceptance/v1/en.jsonl ]
 }
 if [ -f .pipeline/final_build_done.flag ]; then
+  launchctl remove com.razvan.eeaki-fbuild 2>/dev/null
   echo "final build complete"
 elif launchctl list com.razvan.eeaki-fbuild > /dev/null 2>&1; then
   echo "final build running"

@@ -224,7 +224,7 @@ elif launchctl list com.razvan.eeaki-depl > /dev/null 2>&1; then
 else
   launchctl submit -l com.razvan.eeaki-depl \
     -o /tmp/trn_depl.log -e /tmp/trn_depl_err.log \
-    -- /bin/bash scripts/run_depl.sh
+    -- /bin/bash "$(pwd)/scripts/run_depl.sh"
   echo "launched de/pl worker job"
 fi
 
@@ -240,7 +240,7 @@ elif launchctl list com.razvan.eeaki-fbuild > /dev/null 2>&1; then
 elif trn_full_done && acceptance_all_done; then
   launchctl submit -l com.razvan.eeaki-fbuild \
     -o /tmp/final_build_orch.log -e /tmp/final_build_orch_err.log \
-    -- /bin/bash scripts/run_final_build.sh
+    -- /bin/bash "$(pwd)/scripts/run_final_build.sh"
   echo "launched final build (launchd job)"
 else
   echo "final build waiting (training or acceptance incomplete)"
@@ -258,7 +258,7 @@ elif launchctl list com.razvan.eeaki-inhousebuild > /dev/null 2>&1; then
 elif trn_inhouse_done && [ ! -f .pipeline/final_build_done.flag ]; then
   launchctl submit -l com.razvan.eeaki-inhousebuild \
     -o /tmp/inhouse_build_orch.log -e /tmp/inhouse_build_orch_err.log \
-    -- /bin/bash scripts/run_inhouse_build.sh
+    -- /bin/bash "$(pwd)/scripts/run_inhouse_build.sh"
   echo "launched in-house interim build (launchd job)"
 else
   echo "in-house interim build waiting"

@@ -59,7 +59,7 @@ uv run python scripts/apply_threshold.py --threshold "$THR" \
 uv run python scripts/sweep_acceptance.py \
   --gold data/acceptance/v1/test.jsonl \
   --preds models/setfit/acceptance-predictions.jsonl \
-  --thresholds 0.80,0.85,0.90,0.95,0.98 > reports/final_sweep.txt 2>&1
+  --thresholds 0.80,0.85,0.90,0.95,0.98,0.99 > reports/final_sweep.txt 2>&1
 
 # gated predictions at the chosen threshold (manifest already updated)
 uv run python scripts/predict_acceptance.py \

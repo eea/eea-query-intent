@@ -55,15 +55,17 @@ uv run eea-query-intent evaluate \
   --predictions models/setfit/acceptance-predictions-gated.jsonl \
   > reports/final_acceptance_report.json 2>&1 || true
 
-# restart the local service so it serves the new model (if it was running)
-if pgrep -f "eea_query_intent.service" > /dev/null 2>&1; then
-  echo "restarting local service for the new model"
-  pkill -f "eea_query_intent.service"
-  sleep 5
-  (EEA_QI_DEVICE=mps nohup uv run python -m eea_query_intent.service > /tmp/qi-service.log 2>&1 &)
-  sleep 25
-  curl -s --max-time 10 http://127.0.0.1:8100/health || echo "service health check failed"
-fi
+# restart the local service via its own launchd job (a nohup child of
+# this build job would be torn down with the job)
+echo "restarting local service for the new model (launchd job)"
+launchctl remove com.razvan.eeaki-service 2>/dev/null
+pkill -f "eea_query_intent.service" 2>/dev/null
+sleep 3
+launchctl submit -l com.razvan.eeaki-service \
+  -o /tmp/qi-service.log -e /tmp/qi-service_err.log \
+  -- /bin/bash scripts/run_service.sh
+sleep 30
+curl -s --max-time 10 http://127.0.0.1:8100/health || echo "service health check failed"
 
 {
   echo "final build $(date)"

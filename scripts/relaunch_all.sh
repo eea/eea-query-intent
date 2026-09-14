@@ -157,9 +157,11 @@ else
 fi
 
 # 6. 27-language training corpus phase (run_train_phase.sh).
-# Completion: all 28 training finals (en + 27) with at least 2800 rows
-# (the QA per-intent tolerance allows slightly shorter finals, min ~2806).
-trn_all_done() {
+# Completion: all 28 training finals with at least 2800 rows (the QA
+# per-intent tolerance allows slightly shorter finals, min ~2806). While
+# the GPT pause is active, the 17 in-house corpora count as complete.
+INHOUSE_LANGS="bg da de en es fi fr hr it nb nl nn pl pt ro sk tr"
+trn_full_done() {
   [ -f data/training/v1/en.jsonl ] && [ "$(wc -l < data/training/v1/en.jsonl)" -ge 2800 ] || return 1
   [ -f .pipeline/trn_langs.txt ] || return 1
   for lang in $(cat .pipeline/trn_langs.txt); do
@@ -167,18 +169,33 @@ trn_all_done() {
       [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 2800 ] || return 1
   done
 }
+trn_inhouse_done() {
+  local lang
+  for lang in $INHOUSE_LANGS; do
+    [ -f "data/training/v1/${lang}.jsonl" ] && \
+      [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 2800 ] || return 1
+  done
+}
 trn_phase_running() {
   # The phase is alive only while its dispatcher (phase shell or xargs)
-  # is alive. Orphaned workers alone do NOT count: when the dispatcher
-  # dies, its already-dispatched-but-failed languages would never be
-  # retried (xargs never re-dispatches), so the phase must restart.
+  # or a dedicated de/pl worker is alive. Orphaned bare gen/qa workers
+  # do NOT count (xargs never re-dispatches), but a bare
+  # train_one_lang.sh is a supervised worker and counts.
   pgrep -f "run_train_phase.sh" > /dev/null 2>&1 || \
-    pgrep -f "xargs -L 1 -P 4 -I {} bash scripts/train_one_lang.sh" > /dev/null 2>&1
+    pgrep -f "xargs -L 1 -P 4 -I {} bash scripts/train_one_lang.sh" > /dev/null 2>&1 || \
+    pgrep -f "bash scripts/train_one_lang.sh" > /dev/null 2>&1 || \
+    pgrep -f "run_depl.sh" > /dev/null 2>&1
 }
-if trn_all_done; then
+if trn_full_done; then
   echo "training corpus complete (all 28 languages)"
+elif trn_inhouse_done && [ -f .pipeline/gpt_paused ]; then
+  echo "training corpus complete (17 in-house; GPT languages paused)"
 elif trn_phase_running; then
   echo "training corpus phase running"
+elif [ -f .pipeline/gpt_paused ]; then
+  # de/pl are covered by the dedicated launchd job; the GPT languages
+  # exit via the pause guard, so a full nohup phase would be a no-op.
+  echo "training corpus: de/pl via launchd worker job (GPT paused)"
 else
   MATCHES=$( { pgrep -f "gpt_train_gen.py"; pgrep -f "gpt_train_qa.py"; } 2>/dev/null | tr '\n' ' ')
   echo "trn: restarting at $(date +%T) (live-matches-before-pkill: ${MATCHES:-none})"
@@ -190,6 +207,27 @@ else
   echo "launched training corpus phase (pid $!)"
 fi
 
+# 6b. de/pl sequential workers as a first-class launchd job.
+# Children of the relaunch job are torn down by launchd a few minutes
+# after the job exits, so the workers must run as their own job.
+depl_done() {
+  local lang
+  for lang in de pl; do
+    [ -f "data/training/v1/${lang}.jsonl" ] && \
+      [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 2800 ] || return 1
+  done
+}
+if depl_done; then
+  launchctl remove com.razvan.eeaki-depl 2>/dev/null
+elif launchctl list com.razvan.eeaki-depl > /dev/null 2>&1; then
+  echo "de/pl worker job running"
+else
+  launchctl submit -l com.razvan.eeaki-depl \
+    -o /tmp/trn_depl.log -e /tmp/trn_depl_err.log \
+    -- /bin/bash scripts/run_depl.sh
+  echo "launched de/pl worker job"
+fi
+
 # 7. Final build chain (run_final_build.sh). Fires when the training
 # corpus AND the acceptance exam (all 28 shards incl. en) are complete.
 acceptance_all_done() {
@@ -197,39 +235,31 @@ acceptance_all_done() {
 }
 if [ -f .pipeline/final_build_done.flag ]; then
   echo "final build complete"
-elif pgrep -f "run_final_build.sh" > /dev/null 2>&1; then
+elif launchctl list com.razvan.eeaki-fbuild > /dev/null 2>&1; then
   echo "final build running"
-elif trn_all_done && acceptance_all_done; then
-  nohup bash scripts/run_final_build.sh > /tmp/final_build_orch.log 2>&1 &
-  echo $! > .pipeline/finalbuild.pid
-  echo "launched final build (pid $!)"
+elif trn_full_done && acceptance_all_done; then
+  launchctl submit -l com.razvan.eeaki-fbuild \
+    -o /tmp/final_build_orch.log -e /tmp/final_build_orch_err.log \
+    -- /bin/bash scripts/run_final_build.sh
+  echo "launched final build (launchd job)"
 else
   echo "final build waiting (training or acceptance incomplete)"
 fi
 
 # 8. In-house interim final build (17 languages, no GPT data).
-# Fires once all 17 in-house finals AND all 28 acceptance shards exist.
-# Deliberately does NOT set the stage-7 flag, so the full 28-language
-# build still fires after the GPT-paused languages resume.
-INHOUSE_LANGS="bg da de en es fi fr hr it nb nl nn pl pt ro sk tr"
-inhouse_finals_ok() {
-  local lang
-  for lang in $INHOUSE_LANGS; do
-    [ -f "data/training/v1/${lang}.jsonl" ] && \
-      [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 2800 ] || return 1
-  done
-  local shards
-  shards=$(ls data/acceptance/v1/*.jsonl 2>/dev/null | grep -cv raw)
-  [ "$shards" -ge 28 ]
-}
+# Runs as a first-class launchd job (children of the relaunch job get
+# torn down too early). Deliberately does NOT set the stage-7 flag, so
+# the full 28-language build still fires after the GPT pause lifts.
 if [ -f .pipeline/inhouse_build_done.flag ]; then
+  launchctl remove com.razvan.eeaki-inhousebuild 2>/dev/null
   echo "in-house interim build complete"
-elif pgrep -f "run_inhouse_build.sh" > /dev/null 2>&1; then
+elif launchctl list com.razvan.eeaki-inhousebuild > /dev/null 2>&1; then
   echo "in-house interim build running"
-elif inhouse_finals_ok && [ ! -f .pipeline/final_build_done.flag ]; then
-  nohup bash scripts/run_inhouse_build.sh > /tmp/inhouse_build_orch.log 2>&1 &
-  echo $! > .pipeline/inhousebuild.pid
-  echo "launched in-house interim build (pid $!)"
+elif trn_inhouse_done && [ ! -f .pipeline/final_build_done.flag ]; then
+  launchctl submit -l com.razvan.eeaki-inhousebuild \
+    -o /tmp/inhouse_build_orch.log -e /tmp/inhouse_build_orch_err.log \
+    -- /bin/bash scripts/run_inhouse_build.sh
+  echo "launched in-house interim build (launchd job)"
 else
   echo "in-house interim build waiting"
 fi

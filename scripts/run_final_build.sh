@@ -63,7 +63,7 @@ pkill -f "eea_query_intent.service" 2>/dev/null
 sleep 3
 launchctl submit -l com.razvan.eeaki-service \
   -o /tmp/qi-service.log -e /tmp/qi-service_err.log \
-  -- /bin/bash scripts/run_service.sh
+  -- /bin/bash "$(pwd)/scripts/run_service.sh"
 sleep 30
 curl -s --max-time 10 http://127.0.0.1:8100/health || echo "service health check failed"
 

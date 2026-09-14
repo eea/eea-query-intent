@@ -79,11 +79,12 @@ pkill -f "eea_query_intent.service" 2>/dev/null
 sleep 3
 launchctl submit -l com.razvan.eeaki-service \
   -o /tmp/qi-service.log -e /tmp/qi-service_err.log \
-  -- /bin/bash scripts/run_service.sh
+  -- /bin/bash "$(pwd)/scripts/run_service.sh"
 sleep 30
 curl -s --max-time 10 http://127.0.0.1:8100/health || echo "service health check failed"
 
 {
+  echo "in-house interim build $(date)"
   echo "chosen threshold: $THR (see reports/final_threshold.json)"
   echo ""
   echo "sweep:"
@@ -91,7 +92,6 @@ curl -s --max-time 10 http://127.0.0.1:8100/health || echo "service health check
   echo ""
   echo "formal report (chosen threshold):"
   head -60 reports/final_acceptance_report.json
-} >> reports/inhouse_build_summary.txt
+} > reports/inhouse_build_summary.txt
 touch .pipeline/inhouse_build_done.flag
 echo "=== in-house interim build DONE $(date) ==="
-echo "in-house interim build $(date)" > reports/inhouse_build_summary.txt

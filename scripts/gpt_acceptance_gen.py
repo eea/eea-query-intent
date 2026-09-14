@@ -262,8 +262,11 @@ def call_gpt_raw(
                 # A reply that starts like JSON but fails to parse is almost
                 # always a truncated generation, not a quota limit: retry
                 # fast. Anything else (rate-limit text, errors, empty) gets
-                # the long 5-minute backoff.
-                partial = text.lstrip()[:1] in ("{", "[")
+                # the long 5-minute backoff. Strip the markdown fence first:
+                # the gateway often wraps replies in ```json and truncates
+                # mid-object, which would otherwise look non-JSON.
+                unfenced = re.sub(r"^\s*```(?:json)?\s*", "", text).lstrip()
+                partial = unfenced[:1] in ("{", "[")
                 wait_secs = 15 if partial else 300
                 max_waits = 20 if partial else limit_waits
                 for wait in range(1, max_waits + 1):

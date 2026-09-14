@@ -15,8 +15,9 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 LANG_="$1"
 exec >> "/tmp/trn_1_${LANG_}.log" 2>&1
 
+# 2800: the QA per-intent tolerance allows slightly shorter finals.
 if [ -f "data/training/v1/${LANG_}.jsonl" ] && \
-   [ "$(wc -l < "data/training/v1/${LANG_}.jsonl")" -ge 3000 ]; then
+   [ "$(wc -l < "data/training/v1/${LANG_}.jsonl")" -ge 2800 ]; then
   echo "${LANG_}: already complete ($(wc -l < "data/training/v1/${LANG_}.jsonl") rows)"
   exit 0
 fi

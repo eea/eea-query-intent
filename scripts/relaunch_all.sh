@@ -157,19 +157,23 @@ else
 fi
 
 # 6. 27-language training corpus phase (run_train_phase.sh).
-# Completion: all 28 training finals (en + 27) with 3000 rows each.
+# Completion: all 28 training finals (en + 27) with at least 2800 rows
+# (the QA per-intent tolerance allows slightly shorter finals, min ~2806).
 trn_all_done() {
-  [ -f data/training/v1/en.jsonl ] && [ "$(wc -l < data/training/v1/en.jsonl)" -ge 3000 ] || return 1
+  [ -f data/training/v1/en.jsonl ] && [ "$(wc -l < data/training/v1/en.jsonl)" -ge 2800 ] || return 1
   [ -f .pipeline/trn_langs.txt ] || return 1
   for lang in $(cat .pipeline/trn_langs.txt); do
     [ -f "data/training/v1/${lang}.jsonl" ] && \
-      [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 3000 ] || return 1
+      [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 2800 ] || return 1
   done
 }
 trn_phase_running() {
+  # The phase is alive only while its dispatcher (phase shell or xargs)
+  # is alive. Orphaned workers alone do NOT count: when the dispatcher
+  # dies, its already-dispatched-but-failed languages would never be
+  # retried (xargs never re-dispatches), so the phase must restart.
   pgrep -f "run_train_phase.sh" > /dev/null 2>&1 || \
-    pgrep -f "gpt_train_gen.py" > /dev/null 2>&1 || \
-    pgrep -f "gpt_train_qa.py" > /dev/null 2>&1
+    pgrep -f "xargs -L 1 -P 4 -I {} bash scripts/train_one_lang.sh" > /dev/null 2>&1
 }
 if trn_all_done; then
   echo "training corpus complete (all 28 languages)"
@@ -201,6 +205,33 @@ elif trn_all_done && acceptance_all_done; then
   echo "launched final build (pid $!)"
 else
   echo "final build waiting (training or acceptance incomplete)"
+fi
+
+# 8. In-house interim final build (17 languages, no GPT data).
+# Fires once all 17 in-house finals AND all 28 acceptance shards exist.
+# Deliberately does NOT set the stage-7 flag, so the full 28-language
+# build still fires after the GPT-paused languages resume.
+INHOUSE_LANGS="bg da de en es fi fr hr it nb nl nn pl pt ro sk tr"
+inhouse_finals_ok() {
+  local lang
+  for lang in $INHOUSE_LANGS; do
+    [ -f "data/training/v1/${lang}.jsonl" ] && \
+      [ "$(wc -l < "data/training/v1/${lang}.jsonl")" -ge 2800 ] || return 1
+  done
+  local shards
+  shards=$(ls data/acceptance/v1/*.jsonl 2>/dev/null | grep -cv raw)
+  [ "$shards" -ge 28 ]
+}
+if [ -f .pipeline/inhouse_build_done.flag ]; then
+  echo "in-house interim build complete"
+elif pgrep -f "run_inhouse_build.sh" > /dev/null 2>&1; then
+  echo "in-house interim build running"
+elif inhouse_finals_ok && [ ! -f .pipeline/final_build_done.flag ]; then
+  nohup bash scripts/run_inhouse_build.sh > /tmp/inhouse_build_orch.log 2>&1 &
+  echo $! > .pipeline/inhousebuild.pid
+  echo "launched in-house interim build (pid $!)"
+else
+  echo "in-house interim build waiting"
 fi
 
 echo "relaunch checked $(date)"

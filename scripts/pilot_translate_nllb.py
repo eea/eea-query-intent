@@ -107,11 +107,23 @@ def load_corpus(path: Path) -> list[dict]:
     ]
 
 
+def _dedup_files() -> list[Path]:
+    files = [p for p in DEDUP_FILES if p.exists()]
+    bank_dir = ROOT / "data" / "pilot" / "noq-short"
+    if bank_dir.exists():
+        for p in sorted(bank_dir.glob("*.jsonl")):
+            if p.name.startswith("counter-") or p.name in (
+                "train.jsonl",
+                "calibration.jsonl",
+            ):
+                continue
+            files.append(p)
+    return files
+
+
 def blocked_texts() -> set[str]:
     blocked: set[str] = set()
-    for path in DEDUP_FILES:
-        if not path.exists():
-            continue
+    for path in _dedup_files():
         with path.open(encoding="utf-8") as handle:
             for line in handle:
                 if line.strip():
@@ -185,9 +197,18 @@ def generate_batch(tokenizer, model, spec: dict, texts: list[str]) -> list[str]:
     return tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
 
-def translate_language(lang: str, rows: list[dict], out_dir: Path) -> None:
+def translate_language(
+    lang: str, rows: list[dict], out_dir: Path, id_prefix: str = "nllb"
+) -> None:
     tokenizer, model, spec = build_engine(lang)
     print(f"[{lang}] model loaded; translating {len(rows)} rows", flush=True)
+
+    def row_id(rec: dict) -> str:
+        parts = rec["id"].split("-")
+        if len(parts) >= 3 and parts[1] == "en":
+            # v1ex-en-question-0001 -> v1ex-de-question-0001 (lineage)
+            return f"{parts[0]}-{lang}-{'-'.join(parts[2:])}"
+        return f"{id_prefix}-{lang}-{rec['intent']}-{len(kept) + 1:04d}"
 
     blocked = blocked_texts()
     out_path = out_dir / f"{lang}.jsonl"
@@ -216,10 +237,11 @@ def translate_language(lang: str, rows: list[dict], out_dir: Path) -> None:
             if flag:
                 flags[flag] += 1
             seen.add(key)
+            rid = row_id(rec)
             kept.append(
                 {
-                    "id": f"nllb-{lang}-{rec['intent']}-{len(kept) + 1:04d}",
-                    "template_id": f"nllb-{lang}-{rec['intent']}-{len(kept) + 1:04d}",
+                    "id": rid,
+                    "template_id": rid,
                     "language": lang,
                     "text": text,
                     "intent": rec["intent"],
@@ -250,20 +272,37 @@ def translate_language(lang: str, rows: list[dict], out_dir: Path) -> None:
 
 
 def main() -> int:
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
     out_dir = OUT_DIR
-    if "--out-dir" in sys.argv:
-        idx = sys.argv.index("--out-dir")
-        out_dir = ROOT / sys.argv[idx + 1]
-    langs = [code for code in (args or list(ENGINES)) if code in ENGINES]
+    input_path = EN_CORPUS
+    id_prefix = "nllb"
+    langs: list[str] = []
+    argv = sys.argv[1:]
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--out-dir" and i + 1 < len(argv):
+            out_dir = ROOT / argv[i + 1]
+            i += 2
+            continue
+        if arg == "--input" and i + 1 < len(argv):
+            input_path = ROOT / argv[i + 1]
+            i += 2
+            continue
+        if arg == "--id-prefix" and i + 1 < len(argv):
+            id_prefix = argv[i + 1]
+            i += 2
+            continue
+        if arg in ENGINES:
+            langs.append(arg)
+        i += 1
     if not langs:
         print("no valid languages; expected subset of", list(ENGINES))
         return 1
     out_dir.mkdir(parents=True, exist_ok=True)
-    rows = load_corpus(EN_CORPUS)
-    print(f"source: {EN_CORPUS} ({len(rows)} rows)", flush=True)
+    rows = load_corpus(input_path)
+    print(f"source: {input_path} ({len(rows)} rows)", flush=True)
     for lang in langs:
-        translate_language(lang, rows, out_dir)
+        translate_language(lang, rows, out_dir, id_prefix)
     return 0
 
 

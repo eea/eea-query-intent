@@ -115,6 +115,10 @@ def corpus_list() -> list[tuple[str, Path]]:
                 # intermediate artifacts of the previous iteration, not inputs
                 continue
             corpa.append((f"bank/{p.stem}", p))
+    pools_dir = ROOT / "data" / "pilot" / "v1-pools"
+    if pools_dir.exists():
+        for p in sorted(pools_dir.glob("*/*.jsonl")):
+            corpa.append((f"pool/{p.parent.name}/{p.stem}", p))
     return corpa
 
 

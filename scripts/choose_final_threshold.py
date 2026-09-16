@@ -54,9 +54,9 @@ def measure(gold: Path, preds: Path, thr: float) -> dict:
     try:
         res = subprocess.run(
             [
-                sys.executable,
-                "-m",
-                "eea_query_intent.cli",
+                "uv",
+                "run",
+                "eea-query-intent",
                 "evaluate",
                 "--gold",
                 str(gold),
@@ -67,7 +67,18 @@ def measure(gold: Path, preds: Path, thr: float) -> dict:
             text=True,
             cwd=ROOT,
         )
-        report = json.loads(res.stdout)
+        # Exit code 1 means "report computed, formal gate not met" - the
+        # report on stdout is still the data we need.
+        report = json.loads(res.stdout or "null")
+        if (
+            not isinstance(report, dict)
+            or "error" in report
+            or "languages" not in report
+        ):
+            raise RuntimeError(
+                f"evaluate failed (exit {res.returncode}): "
+                f"{str(report)[:300]} {res.stderr[:300]}"
+            )
     finally:
         Path(tmp.name).unlink(missing_ok=True)
     langs = report["languages"]

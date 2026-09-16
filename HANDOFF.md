@@ -4,6 +4,27 @@ Written: 2026-09-17, ~01:45. Owner: user (Razvan). Previous handoff context:
 the compacted session summary in the assistant's memory; this document is
 self-contained for a fresh conversation.
 
+## Incident 2026-09-17 ~02:10 (recovered, no data loss)
+
+The first chain run (01:49) died seed-by-seed at the threshold step: the
+v1 calibration/exam rows were missing the `template_id`/`source_type`/
+`review_status`/`split` fields the package's dataset contract requires
+(the builder emitted 5-key rows). Consequence: d1-s1 and binary-s1 were
+fully trained (models + calibration predictions on disk) but no thresholds
+were derived, and backbone never trained. Fixed:
+- `v1_make_mix.py` now emits full 8-key contract rows (pool rows mapped to
+  allowed source_type values, `llm_reviewed`, correct split) — data content
+  unchanged, exam sha changed (e92055c1ff647940 -> 79fca1bb9edab755),
+  exam was never run so no comparability impact; mix sha unchanged
+  (1e0e75eb65749835, identical to the committed dataset).
+- `choose_final_threshold.py` measure() now uses `uv run eea-query-intent`
+  and validates the report instead of the exit code (evaluate exits 1 when
+  the diagnostic five-class gate is unmet, which is expected).
+- `v1_train_eval.sh` skips a seed whose model + calibration predictions
+  already exist, so the restarted chain (02:25) reuses d1-s1 and binary-s1.
+- Verified: both files pass `load_dataset` full-contract validation and
+  threshold derivation runs end-to-end on d1-s1.
+
 ## Where things stand
 
 - **Classifier production model is still setfit-v4** in `models/setfit/`,

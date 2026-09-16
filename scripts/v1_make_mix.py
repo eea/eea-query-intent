@@ -38,6 +38,18 @@ POOL = ROOT / "data" / "pilot" / "v1-pools"
 HYGIENE = ROOT / "data" / "hygiene"
 DROP_DECISIONS = HYGIENE / "2026-09-17" / "drop_decisions.jsonl"
 
+# dataset.py REQUIRED_FIELDS contract: pool rows carry pipeline-local
+# source_type values; map them into the package's allowed set. Translated
+# and authored pool rows went through heuristic QA + Gemma blind judging +
+# assistant adjudication, recorded as llm_reviewed per the project
+# decision that LLM QA counts as review.
+CONTRACT_SOURCE = {
+    "nllb_translated": "synthetic_translated",
+    "opus_translated": "synthetic_translated",
+    "v1_exam_authored": "synthetic_generated",
+    "v1_calib_authored": "synthetic_generated",
+}
+
 INHOUSE = [
     "bg",
     "da",
@@ -377,7 +389,21 @@ def main() -> None:
             cal_dup += 1
             continue
         seen_cal.add(key)
-        cal_rows.append({k: r[k] for k in ("id", "intent", "language", "text")})
+        cal_rows.append(
+            {
+                k: r[k]
+                for k in (
+                    "id",
+                    "intent",
+                    "language",
+                    "text",
+                    "template_id",
+                    "source_type",
+                    "review_status",
+                    "split",
+                )
+            }
+        )
     cal_pool_new = 0
     cal_drop_decisions = 0
     for lang in ALL_LANGS:
@@ -404,6 +430,12 @@ def main() -> None:
                     "intent": r["intent"],
                     "language": lang,
                     "text": r["text"],
+                    "template_id": r.get("template_id") or r["id"],
+                    "source_type": CONTRACT_SOURCE.get(
+                        r.get("source_type", ""), "synthetic_generated"
+                    ),
+                    "review_status": "llm_reviewed",
+                    "split": "calibration",
                 }
             )
             cal_pool_new += 1
@@ -451,7 +483,12 @@ def main() -> None:
                 "intent": r["intent"],
                 "language": lang,
                 "text": r["text"],
-                "source_id": r.get("source_id"),
+                "template_id": r.get("template_id") or r["id"],
+                "source_type": CONTRACT_SOURCE.get(
+                    r.get("source_type", ""), "synthetic_generated"
+                ),
+                "review_status": "llm_reviewed",
+                "split": "test",
             }
             exam_rows.append(out)
             exam_new += 1

@@ -41,6 +41,9 @@ rm -f ".pipeline/v1_${FAMILY}_train_done.flag"
 
 for SEED in 1 2 3; do
   DIR="models/${PREFIX}-s${SEED}"
+  if [ -f "${DIR}/manifest.json" ] && [ -f "${DIR}/calibration-predictions.jsonl" ]; then
+    echo "=== ${FAMILY} seed ${SEED}: model exists, skipping train ($(date)) ==="
+  else
   echo "=== ${FAMILY} seed ${SEED}: train start $(date) ==="
   uv run python scripts/train_setfit.py \
     --train-file data/pilot/v1/train.jsonl \
@@ -50,6 +53,7 @@ for SEED in 1 2 3; do
     --seed "${SEED}" \
         ${EXTRA[@]+"${EXTRA[@]}"} \
     || { echo "TRAIN FAILED ${FAMILY} seed ${SEED}"; exit 1; }
+  fi
 
   # train_setfit.py already emitted <dir>/calibration-predictions.jsonl
   # (raw probabilities; input lowercased because the v1 calibration file

@@ -4,6 +4,6 @@
   "base_sha256_16": "cb4118dc0780cfba",
   "added_rows": 2438,
   "total_rows": 23718,
-  "sha256_16": "e92055c1ff647940",
+  "sha256_16": "79fca1bb9edab755",
   "note": "new short rows (90 concepts/language, NLLB-translated, original case) are the diagnostic short-query slice; gold labels come from the English source concept class"
 }

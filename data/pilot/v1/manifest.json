@@ -643,9 +643,9 @@
   "calibration_new_pool_rows": 2678,
   "calibration_dedup_dropped": 0,
   "calibration_drop_decisions": 27,
-  "calibration_sha256_16": "fdc1926378db7e9f",
+  "calibration_sha256_16": "a1e99870d67b4f9e",
   "exam_total": 23718,
   "exam_new": 2438,
   "exam_drop_decisions": 82,
-  "exam_sha256_16": "e92055c1ff647940"
+  "exam_sha256_16": "79fca1bb9edab755"
 }

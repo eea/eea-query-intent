@@ -11,10 +11,12 @@ Engines (all local, no external service):
 
 NLLB target codes verified empirically (2026-09-16 short-bank pass):
   bg bul_Cyrl, cs ces_Latn, da dan_Latn, de deu_Latn, el ell_Grek,
-  et est_Latn, fi fin_Latn, fr fra_Latn, ga gle_Latn, hr hrv_Latn,
-  hu hun_Latn, is isl_Latn, it ita_Latn, lt lit_Latn, lv lvs_Latn,
-  nb nob_Latn, nl nld_Latn, nn nno_Latn, pl pol_Latn, pt por_Latn,
-  ro ron_Latn, sk slk_Latn, sl slv_Latn, sv swe_Latn, tr tur_Latn
+  bg bul_Cyrl, cs ces_Latn, da dan_Latn, de deu_Latn, el ell_Grek,
+  es spa_Latn (NOT esp_Latn - that is <unk>), et est_Latn, fi fin_Latn,
+  fr fra_Latn, ga gle_Latn, hr hrv_Latn, hu hun_Latn, is isl_Latn,
+  it ita_Latn, lt lit_Latn, lv lvs_Latn, nb nob_Latn, nl nld_Latn,
+  nn nno_Latn, pl pol_Latn, pt por_Latn, ro ron_Latn, sk slk_Latn,
+  sl slv_Latn, sv swe_Latn, tr tur_Latn
   (bul_Latn/nor_Latn/lav_Latn do NOT exist in the 1.3B vocab)
 
 No LLM reviewer is used (GPT is paused, and the in-house model is the
@@ -63,6 +65,7 @@ ENGINES = {
     "da": _nllb("dan_Latn"),
     "de": _nllb("deu_Latn"),
     "el": _nllb("ell_Grek"),
+    "es": _nllb("spa_Latn"),
     "et": _nllb("est_Latn"),
     "fi": _nllb("fin_Latn"),
     "fr": _nllb("fra_Latn"),

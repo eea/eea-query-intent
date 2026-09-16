@@ -2255,6 +2255,252 @@
 {"corpus": "v1/lv-raw", "id": "trn-lv-exploratory-0589", "language": "lv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kā PFAS nonāk vidē un pārtikas ķēdē?"}
 {"corpus": "v1/lv-raw", "id": "trn-lv-exploratory-0592", "language": "lv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kā lauksaimniecības slāpeklis ietekmē gaisa kvalitāti?"}
 {"corpus": "v1/lv-raw", "id": "trn-lv-exploratory-0595", "language": "lv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Ko zinām par PFAS ietekmi uz dzeramā ūdens kvalitāti Eiropā?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0734", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o izpostavljenosti NO2 v evropskih mestih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0763", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj je znano o mikroplastiki v evropskih rekah?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0776", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kakšno vlogo ima dušik pri onesnaževanju zraka in vode?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0782", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj povzroča visoke koncentracije ozona okoli Sredozemlja?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0788", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako podnebne spremembe vplivajo na evropske gozdove?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0790", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere so največje grožnje za biotsko raznovrstnost na kmetijskih tleh?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0796", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je raven hrupa v Berlinu od leta 2015 spremenila?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0799", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj pojasnjuje povečanje emisij iz letalstva pred letom 2020?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0804", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o ukrepih za obnovo opraševalcev?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0810", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri so glavni viri emisij žveplovega dioksida v EU?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0812", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se nemške emisije CO2 od leta 2000 spremenile?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0823", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se suše spreminjajo v Španiji, Italiji in Grčiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0829", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o upadanju opraševalcev v EU?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0833", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Od kod prihajajo mikroplastiki v evropskih rekah?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0835", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je uporaba odlagališč v Romuniji od leta 2005 spremenila?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0837", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o onesnaženosti z PFAS v pitni vodi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0842", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako urbani toplotni otoki vplivajo na zdravje v Madridu?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0850", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj povzroča visoke koncentracije PM2,5 v Poljski pozimi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0853", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Zakaj je onesnaževanje ozona med poletnimi vročinami večje?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0858", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri dejavniki povečujejo tveganje poplav v evropskih mestih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0860", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je biološka raznovrstnost v zaščitenih območjih od leta 2010 spremenila?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0867", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri so glavni viri in tveganja za zdravje PFAS v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0871", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se emisije iz prometa spremenile na Švedskem od leta 1990?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0873", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj kažejo kazalniki EGP o elektronskih odpadkih v letu 2022?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0880", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o onesnaženosti z NO2 v evropskih mestih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0883", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je onesnaževanje z amoniakom iz kmetijstva spremenilo od leta 1990?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0889", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako je sistem EU za trgovanje z emisijami zmanjšal emisije?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0896", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj je znano o onesnaženosti podzemnih voda v kmetijskih regijah?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0904", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o degradaciji tal v Španiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0914", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako ostanki pesticidov vplivajo na evropske vode?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0923", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri so glavni učinki onesnaženja zraka na zdravje v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0931", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je od leta 2005 spremenilo recikliranje odpadkov iz embalaže?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0939", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj kažejo podatki EEA o izpostavljenosti ozonu v letu 2024?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0947", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o nevarnostih mestne toplote v Bukarešti?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0953", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o vplivih dušikovega dioksida na zdravje v evropskih mestih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0956", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Od kod prihajajo emisije amoniaka v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0958", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se od leta 1990 spremenile emisije CO2 v Romuniji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0963", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kakšno vlogo ima LULUCF pri izpolnjevanju podnebnih ciljev EU?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0967", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere evropske reke so se v okviru WFD najbolj izboljšale?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0970", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj EQR razkriva o ekološkem stanju reke?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0974", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako podnebne spremembe vplivajo na poplave v Nemčiji in Belgiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0976", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o suši v Evropi leta 2022?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0981", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere države EU so najbližje ciljem za zaščitena območja za leto 2030?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0983", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se od leta 1990 gozdni pomivalniki ogljika spremenili?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0987", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj povzroča upadanje opraševalcev v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0991", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kam gre evropski plastični odpadek?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0993", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o mikroplastiki v evropskih morjih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0996", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako napreduje Evropa pri recikliranju elektronskih odpadkov?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-0998", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere države so od leta 2005 najhitreje zmanjšale količino odpadkov na odlagališčih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1002", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kakšna so tveganja za zdravje zaradi PFAS v pitni vodi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1004", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se emisije živega srebra in svinca od leta 1990 spremenile?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1007", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o obstojnih organskih onesnaževalcih v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1011", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako hudi so mestni toplotni otoki v Atenah in Madridu?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1013", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj je povzročilo izčrpanje ozonskega sloja in kako se to odpravlja?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1016", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se od leta 2005 razvile emisije iz letalstva?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1027", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je kmetijski amoniak v Nemčiji od leta 1990 spremenil?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1030", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj je evropski zeleni dogovor dosegel za okolje?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1032", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako deluje EU ETS in katere emisije zajema?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1036", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je v Grčiji spremenila kakovost kopalnih voda?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1038", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri trendi so vidni pri kakovosti podzemne vode na Malti?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1045", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o degradaciji tal v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1047", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je proizvodnja komunalnih odpadkov od leta 2010 spremenila?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1063", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere države so od leta 1990 najhitreje zmanjšale emisije toplogrednih plinov?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1069", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj pojasnjuje upadanje podtalnice v Španiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1072", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se spreminja biotska raznovrstnost na zaščitenih območjih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1078", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj povzroča razlike v stopnjah recikliranja v državah EU?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1082", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je uporaba odlagališč zmanjšala na Litvi in v Estoniji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1091", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o zdravstvenih učinkih dušikovega dioksida v mestih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1094", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Zakaj so emisije amoniaka iz evropskega kmetijstva še vedno visoke?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1096", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se emisije CO2 na prebivalca v EU od leta 2000 spremenile?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1098", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri so glavni cilji evropskega zelenega dogovora?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1100", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako je sistem EU za trgovanje z emisijami vplival na industrijske emisije?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1102", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kje v Evropi najhitreje raste sončna energija?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1105", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je kakovost kopalnih voda v Grčiji od leta 2010 spremenila?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1107", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri pritiski vplivajo na kakovost podzemne vode v Španiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1109", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako suše vplivajo na razpoložljivost vode v Italiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1111", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o vplivih podnebja na evropske gozdove?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1114", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako ostanki pesticidov vplivajo na opraševalce?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1117", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj se zgodi z plastičnimi odpadki, ki se zbirajo v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1120", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Zakaj je uporaba odlagališč v nekaterih državah EU še vedno visoka?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1123", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je prodaja pesticidov v EU od leta 2015 spremenila?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1127", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se ozonska plast nad Evropo okreva?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1129", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri so glavni vplivi kmetijstva na okolje v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1132", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere evropske države so od leta 2010 najhitreje zmanjšale količino PM2,5?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1134", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se izpostavljenost NO2 razlikuje med mestnimi in podeželskimi območji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1137", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere politike spodbujajo rast energije iz obnovljivih virov v Portugalu?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1140", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako poplave vplivajo na skupnosti in ekosisteme v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1142", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Katere so največje grožnje za sladkovodno biotsko raznovrstnost?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1144", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako dobro so evropska varovana območja povezana?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1147", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri ukrepi lahko pomagajo obnoviti populacije opraševalcev?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1150", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri so glavni viri mikroplastike v rekah?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1153", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako EEA meri napredek krožnega gospodarstva?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1155", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj kažejo trendi glede težkih kovin v evropskem zraku?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1156", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako pesticidi vplivajo na podzemno vodo v Franciji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1159", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o podnebnih tveganjih za kmetijstvo v Španiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1164", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o ozonu v Grčiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1185", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o zmanjšanju opraševalcev v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1193", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o onesnaženosti s PFAS v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1205", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kje so v Evropi najpogostejša preseganja mejnih vrednosti za PM10?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1209", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se emisije toplogrednih plinov v EU med letoma 2020 in 2024 spremenile?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1215", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri dejavniki povzročajo izgubo biotske raznovrstnosti v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1227", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se od leta 2005 evropske emisije iz letalstva spremenile?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1239", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kakšno vlogo ima LULUCF pri izpolnjevanju podnebnih ciljev za leto 2030?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1245", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o izgubi biotske raznovrstnosti v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1249", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako je krčenje gozdov vplivalo na romunski gozdni ekosistem?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1255", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Od kod prihajajo mikroplastiki v evropskih morjih?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1261", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako urbani toplotni otoki vplivajo na Atene in Madrid?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1267", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako ozonski zrak škodi pridelkom in rastlinstvu?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1273", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kakšni so glavni trendi LULUCF na Finskem?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1279", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri pritiski degradacijo evropskih zaščitenih območij?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1288", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako se je izpostavljenost prometnemu hrupa spremenila v Dunaju?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1290", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kakšen napredek je Evropa dosegla pri zmanjševanju emisij iz prometa?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1295", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o PFAS v evropski pitni vodi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1298", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako so se od leta 2010 v Španiji povečevale sončna in vetrna energija?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1301", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kje se v Evropi najhitreje povečujejo nevarnosti poplav?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1303", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri dejavniki vodijo k zmanjšanju gozdov v Češki in Nemčiji?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1306", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kako uporaba pesticidov vpliva na opraševalce v Evropi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1316", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kateri so glavni viri emisij iz prometa v EU?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-exploratory-1323", "language": "sl", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Kaj vemo o onesnaženosti PFAS v podzemni vodi?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-unknown-2836", "language": "sl", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "recykling%%%% 404 ???"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-unknown-2878", "language": "sl", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Bo danes deževalo v Berlinu?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-unknown-2894", "language": "sl", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Kaj je to?"}
+{"corpus": "v1/sl-mt", "id": "nllb-sl-unknown-2902", "language": "sl", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Podzemna voda WFD Nemčija statusni sloj 2022??"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-question-0639", "language": "sv", "intent": "question", "flags": ["unmarked_question"], "text": "Var nivåerna av PM2,5 lägre 2024 än 2015."}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0735", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om NO2-exponering i europeiska städer?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0764", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet man om mikroplast i europeiska floder?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0777", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilken roll spelar kväve i luft- och vattenföroreningar?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0783", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad driver de höga ozonkoncentrationerna i Medelhavet?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0789", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar klimatförändringarna Europas skogar?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0791", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de största hoten mot biologisk mångfald på jordbruksmark?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0797", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har bullernivån förändrats i Berlin sedan 2015?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0800", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad förklarar ökningen av luftfartsutsläppen före 2020?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0805", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om åtgärder för återhämtning av pollinatorer?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0811", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de viktigaste källorna till svaveldioxidutsläpp i EU?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0813", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har Tysklands koldioxidutsläpp förändrats sedan år 2000?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0824", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur förändras torkan i Spanien, Italien och Grekland?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0830", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om minskningen av pollinatorer i EU?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0834", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Varifrån kommer mikroplast i Europas floder?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0836", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har användningen av deponier förändrats i Rumänien sedan 2005?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0838", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om PFAS-föroreningar i dricksvatten?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0843", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar stadens värmeöar hälsan i Madrid?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0851", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad är orsaken till de höga koncentrationerna av PM2,5 i Polen under vintern?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0854", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Varför är ozonföroreningarna högre under sommarvärmeböljorna?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0859", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka faktorer ökar risken för översvämningar i europeiska städer?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0861", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har den biologiska mångfalden förändrats i skyddade områden sedan 2010?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0868", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de viktigaste källorna till och hälsoriskerna med PFAS i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0872", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har utsläppen från transporter förändrats i Sverige sedan 1990?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0874", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad visar EES-indikatorerna om e-avfall år 2022?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0881", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om NO2-föroreningar i europeiska städer?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0884", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har ammoniakföroreningar från jordbruket förändrats sedan 1990?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0897", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad är känt om grundvattenföroreningar i jordbruksregioner?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0904", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om jordförstöring i Spanien?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0914", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar bekämpningsmedelsrester europeiska vatten?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0923", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de viktigaste hälsoeffekterna av luftföroreningar i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0931", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har återvinningen av förpackningsavfall förändrats sedan 2005?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0939", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad visar EEA:s uppgifter om ozonexponering år 2024?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0947", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om riskerna med urban värme i Bukarest?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0953", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om hälsoeffekterna av NO2 i europeiska städer?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0956", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Var kommer ammoniakutsläppen i Europa ifrån?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0958", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har Rumäniens koldioxidutsläpp förändrats sedan 1990?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0962", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilken roll spelar LULUCF för att uppfylla EU:s klimatmål?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0966", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka europeiska floder har förbättrats mest inom ramen för WFD?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0969", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad avslöjar EQR om flodens ekologiska tillstånd?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0973", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar klimatförändringarna översvämningarna i Tyskland och Belgien?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0975", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om 2022 års torka i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0980", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka EU-länder ligger närmast 2030-målen för skyddade områden?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0982", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har kolsänkarna i skogarna förändrats sedan 1990?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0986", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad är det som driver nedgången av pollinatorer i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0990", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vart försvinner Europas plastavfall?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0992", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om mikroplast i de europeiska haven?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0995", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka framsteg gör Europa när det gäller återvinning av elektroniskt avfall?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-0997", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka länder har minskat deponeringen snabbast sedan 2005?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1001", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är hälsoriskerna med PFAS i dricksvatten?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1003", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har utsläppen av kvicksilver och bly förändrats sedan 1990?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1006", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om bestående organiska föroreningar i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1010", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur allvarliga är de urbana värmeöarna i Aten och Madrid?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1012", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad orsakade nedbrytningen av ozonlagret och hur vändas den?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1015", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har luftfartsutsläppen utvecklats sedan 2005?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1026", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har jordbrukets ammoniak förändrats i Tyskland sedan 1990?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1030", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad har den europeiska gröna överenskommelsen åstadkommit för miljön?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1032", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur fungerar EU:s utsläppshandelssystem och vilka utsläpp omfattar det?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1037", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har badvattenkvaliteten förändrats i Grekland?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1039", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka trender är synliga för grundvattenkvaliteten på Malta?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1046", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om jordförstöring i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1048", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har produktion av kommunalt avfall förändrats sedan 2010?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1065", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka länder har minskat utsläppen av växthusgaser snabbast sedan 1990?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1071", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad är orsaken till att grundvattnet sjunker i Spanien?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1074", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur förändras den biologiska mångfalden i skyddade områden?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1080", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad är orsaken till skillnaderna i återvinningsgraden i EU-länderna?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1084", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har användningen av deponier minskat i Litauen och Estland?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1093", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om hälsoeffekterna av kväveoxid i städerna?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1096", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Varför är ammoniakutsläppen från det europeiska jordbruket fortfarande höga?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1098", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har EU:s koldioxidutsläpp per capita förändrats sedan år 2000?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1100", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de viktigaste målen för den europeiska gröna överenskommelsen?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1104", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Var i Europa växer solenergin snabbast?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1107", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har badvattenkvaliteten förändrats i Grekland sedan 2010?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1109", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka påtryckningar påverkar grundvattnets kvalitet i Spanien?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1111", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar torka tillgången på vatten i Italien?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1113", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om klimatpåverkan på Europas skogar?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1116", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar bekämpningsmedelsrester pollinerare?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1119", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad händer med det plastavfall som samlas in i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1122", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Varför är användningen av deponier fortfarande hög i vissa EU-länder?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1124", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har försäljningen av bekämpningsmedel förändrats i EU sedan 2015?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1128", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur återhämtar sig ozonlagret över Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1130", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är jordbrukets viktigaste miljöpåverkan i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1133", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka europeiska länder har minskat PM2,5 snabbast sedan 2010?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1135", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur skiljer sig NO2-exponeringen mellan stadsområden och landsbygdsområden?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1138", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka politiker driver tillväxten av förnybar energi i Portugal?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1141", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar översvämningar samhällen och ekosystemen i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1143", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de största hoten mot biologisk mångfald i sötvatten?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1145", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur väl förbundna är Europas skyddade områden?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1148", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka åtgärder kan bidra till att återställa bestökarpopulationerna?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1151", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de främsta källorna till mikroplast i floder?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1154", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur mäter EES framstegen i den cirkulära ekonomin?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1156", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad visar trenderna om tungmetaller i den europeiska luften?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1160", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om klimatrisker för jordbruket i Spanien?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1165", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om ozon i Grekland?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1187", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om nedgången av pollinatorer i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1194", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om PFAS-föroreningar i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1206", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Var i Europa förekommer PM10-gränsöverskridanden oftast?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1210", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har utsläppen av växthusgaser i EU förändrats mellan 2020 och 2024?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1216", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka faktorer driver förlusten av biologisk mångfald i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1228", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har utsläppen från flygindustrin i Europa förändrats sedan 2005?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1240", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilken roll spelar LULUCF för att uppnå klimatmålen för 2030?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1246", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om förlusten av biologisk mångfald i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1250", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har avskogning påverkat Rumäniens skogsökosystem?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1256", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Varifrån kommer mikroplast i de europeiska haven?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1262", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar värmeöarna i städerna Aten och Madrid?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1268", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur skadar ozon grödor och vegetation?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1274", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de viktigaste LULUCF-trenderna i Finland?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1280", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka påtryckningar försämrar Europas skyddade områden?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1289", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har trafikbuller i Wien förändrats?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1291", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka framsteg har gjorts i Europa när det gäller att minska transportutsläppen?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1296", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om PFAS i det europeiska dricksvattnet?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1299", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur har sol- och vindkraften ökat i Spanien sedan 2010?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1302", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Var i Europa ökar risken för översvämningar snabbast?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1304", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka faktorer driver nedgången av skogarna i Tjeckien och Tyskland?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1307", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Hur påverkar användningen av bekämpningsmedel pollinerare i Europa?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1316", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vilka är de viktigaste källorna till transportutsläpp i EU?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-exploratory-1323", "language": "sv", "intent": "exploratory", "flags": ["qmark_nonquestion"], "text": "Vad vet vi om PFAS-föroreningar i grundvatten?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-unknown-2815", "language": "sv", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Vad är det?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-unknown-2817", "language": "sv", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "recycling%%%% 404 ???"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-unknown-2819", "language": "sv", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Berl Weather?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-unknown-2860", "language": "sv", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Kommer det att regna i Berlin idag?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-unknown-2876", "language": "sv", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Vad är det som händer?"}
+{"corpus": "v1/sv-mt", "id": "nllb-sv-unknown-2884", "language": "sv", "intent": "unknown", "flags": ["qmark_nonquestion"], "text": "Grundvatten WFD Tyskland statusskikt 2022??"}
 {"corpus": "calibration", "id": "bg-enx-0437", "language": "bg", "intent": "unknown", "flags": ["dupe_intra"], "text": "https://eea.example/air"}
 {"corpus": "calibration", "id": "cs-enx-0437", "language": "cs", "intent": "unknown", "flags": ["dupe_intra"], "text": "https://eea.example/air"}
 {"corpus": "calibration", "id": "da-enx-0437", "language": "da", "intent": "unknown", "flags": ["dupe_intra"], "text": "https://eea.example/air"}
@@ -7205,3 +7451,19 @@
 {"corpus": "bank/tr", "id": "sb-tr-claim-0164", "language": "tr", "intent": "question", "flags": ["unmarked_question"], "text": "Emisyonlar sınırları aştı"}
 {"corpus": "bank/tr", "id": "sb-tr-claim-0165", "language": "tr", "intent": "question", "flags": ["unmarked_question"], "text": "Plastik her yerde."}
 {"corpus": "bank/tr", "id": "sb-tr-claim-0166", "language": "tr", "intent": "question", "flags": ["unmarked_question"], "text": "Avrupa Birliği iklim konusunda geride kalıyor"}
+{"corpus": "pool/calib/nn", "id": "v1cl-nn-retrieval-0013", "language": "nn", "intent": "retrieval", "flags": ["dupe_xlang"], "text": "strategi for biologisk mangfold pdf"}
+{"corpus": "pool/calib/nn", "id": "v1cl-nn-retrieval-0040", "language": "nn", "intent": "retrieval", "flags": ["dupe_xlang"], "text": "Andel av fornybar energi"}
+{"corpus": "pool/calib/pt", "id": "v1cl-pt-unknown-0085", "language": "pt", "intent": "unknown", "flags": ["dupe_xlang"], "text": "gráficos de acordes de guitarra"}
+{"corpus": "pool/exam/nb", "id": "v1ex-nb-question-0005", "language": "nb", "intent": "question", "flags": ["dupe_xlang"], "text": "hvor kommer PFAS fra?"}
+{"corpus": "pool/exam/nb", "id": "v1ex-nb-question-0013", "language": "nb", "intent": "question", "flags": ["dupe_xlang"], "text": "hvordan er klitter beskyttet?"}
+{"corpus": "pool/exam/nb", "id": "v1ex-nb-exploratory-0032", "language": "nb", "intent": "exploratory", "flags": ["dupe_xlang"], "text": "forklare ørkendannelsen i Europa"}
+{"corpus": "pool/exam/nb", "id": "v1ex-nb-exploratory-0051", "language": "nb", "intent": "exploratory", "flags": ["dupe_xlang"], "text": "om smog fra industrien"}
+{"corpus": "pool/exam/nb", "id": "v1ex-nb-claim-0067", "language": "nb", "intent": "claim", "flags": ["dupe_xlang"], "text": "solenergi bør være obligatorisk"}
+{"corpus": "pool/exam/nb", "id": "v1ex-nb-claim-0073", "language": "nb", "intent": "claim", "flags": ["dupe_xlang"], "text": "mikroplast er i blodet"}
+{"corpus": "pool/exam/nb", "id": "v1ex-nb-claim-0088", "language": "nb", "intent": "claim", "flags": ["dupe_xlang"], "text": "Naturen betaler for oversvømmelser"}
+{"corpus": "pool/exam/nn", "id": "v1ex-nn-exploratory-0039", "language": "nn", "intent": "exploratory", "flags": ["dupe_xlang"], "text": "om kvikksølv i fisk"}
+{"corpus": "pool/exam/nn", "id": "v1ex-nn-claim-0073", "language": "nn", "intent": "claim", "flags": ["dupe_xlang"], "text": "Mikroplast er i blodet"}
+{"corpus": "pool/exam/nn", "id": "v1ex-nn-claim-0082", "language": "nn", "intent": "claim", "flags": ["dupe_xlang"], "text": "Den grønne avtalen er svak"}
+{"corpus": "pool/exam/sk", "id": "v1ex-sk-exploratory-0046", "language": "sk", "intent": "exploratory", "flags": ["dupe_xlang"], "text": "o roztavení alpského permafrostu"}
+{"corpus": "pool/exam/sk", "id": "v1ex-sk-claim-0082", "language": "sk", "intent": "claim", "flags": ["dupe_xlang"], "text": "Zelená dohoda je slabá."}
+{"corpus": "pool/exam/sl", "id": "v1ex-sl-exploratory-0051", "language": "sl", "intent": "exploratory", "flags": ["dupe_xlang"], "text": "o smogu iz industrije"}

@@ -10,7 +10,8 @@ Usage:
     --gold data/acceptance/v1/test.jsonl \
     --preds models/setfit/acceptance-predictions.jsonl
 
-Writes reports/final_threshold.json and prints CHOSEN=<threshold>.
+Writes the selection JSON (default reports/final_threshold.json) and
+prints CHOSEN=<threshold>.
 """
 
 import argparse
@@ -82,6 +83,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--gold", required=True)
     parser.add_argument("--preds", required=True)
+    parser.add_argument("--out", default=str(ROOT / "reports" / "final_threshold.json"))
     args = parser.parse_args()
     gold = Path(args.gold)
     preds = Path(args.preds)
@@ -113,12 +115,12 @@ def main() -> None:
         "gate": "worst-language no-AI false-positive rate <= 1%",
         "candidates": rows,
     }
-    reports = ROOT / "reports"
-    reports.mkdir(exist_ok=True)
-    with (reports / "final_threshold.json").open("w", encoding="utf-8") as h:
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as h:
         json.dump(out, h, indent=2)
         h.write("\n")
-    print(f"CHOSEN={chosen} fallback={fallback}")
+    print(f"CHOSEN={chosen} fallback={fallback} -> {out_path}")
 
 
 if __name__ == "__main__":

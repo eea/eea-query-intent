@@ -1,0 +1,651 @@
+{
+  "inputs": {
+    "A/bg/bg.jsonl": "4121d0171eb4f97e",
+    "A/da/da.jsonl": "794e25086f85baf3",
+    "A/de/de.jsonl": "0a7c4e9311a691ce",
+    "A/en/en.jsonl": "359e44128c2cfea0",
+    "A/es/es.jsonl": "0cdbcaaffd815dd2",
+    "A/fi/fi.jsonl": "b0f80bc80633480a",
+    "A/fr/fr.jsonl": "f5ff78cd02e9c368",
+    "A/hr/hr.jsonl": "2e62eebfbc26db56",
+    "A/it/it.jsonl": "bab0628252bbcd01",
+    "A/nb/nb.jsonl": "5d9f8d020fbfed68",
+    "A/nl/nl.jsonl": "2cb2243a20968d4a",
+    "A/nn/nn.jsonl": "dbb168f1fc13f783",
+    "A/pl/pl.jsonl": "fb0b03ec9ec51a40",
+    "A/pt/pt.jsonl": "25035e8423135c35",
+    "A/ro/ro.jsonl": "40e19074b3fbab70",
+    "A/sk/sk.jsonl": "128e8055f4d660c3",
+    "A/tr/tr.jsonl": "d4f3a9ab15470e03",
+    "B/cs/cs.raw.jsonl": "ebae0f974c81e7b2",
+    "B/el/el.raw.jsonl": "d91df1b4669b51b7",
+    "B/et/et.raw.jsonl": "b7b7f506d3b43504",
+    "B/hu/hu.raw.jsonl": "b2ea8448c9281575",
+    "B/lt/lt.raw.jsonl": "b0de41d6dd6e7da1",
+    "B/lv/lv.raw.jsonl": "8ec8e5ab6cedfcb5",
+    "C/sl/sl.jsonl": "af574733db8a3f88",
+    "C/sv/sv.jsonl": "5040aa3c53075396",
+    "C2/expanded_v3/train.jsonl": "f2560530f07e14a6",
+    "E/bg/bg.jsonl": "9831d5664f23c2e0",
+    "E/da/da.jsonl": "caca0ab621f08c90",
+    "E/de/de.jsonl": "bcb1b7a538a04e8b",
+    "E/en/en.jsonl": "429f501c7a2de61c",
+    "E/es/es.jsonl": "5c06ea41de761187",
+    "E/fi/fi.jsonl": "c8a4b9049dada7cd",
+    "E/fr/fr.jsonl": "5edd4b4a0eac3efc",
+    "E/hr/hr.jsonl": "e9cba3f7d00de6f8",
+    "E/it/it.jsonl": "b5d0b76dd78f5e02",
+    "E/nb/nb.jsonl": "ba66eb50857ab0e6",
+    "E/nl/nl.jsonl": "b77dd145a04b2f06",
+    "E/nn/nn.jsonl": "7a70d9748059adda",
+    "E/pl/pl.jsonl": "f868488c106b3ec5",
+    "E/pt/pt.jsonl": "24d577be5480ceb5",
+    "E/ro/ro.jsonl": "a5b285318267f74b",
+    "E/sk/sk.jsonl": "8577033b30c8f4a1",
+    "E/tr/tr.jsonl": "50680b515cab953a",
+    "E/cs/cs.jsonl": "4b8e2aa5abe8f941",
+    "E/el/el.jsonl": "cdbc7b3d27e4f737",
+    "E/et/et.jsonl": "0612fda21d27f5c8",
+    "E/hu/hu.jsonl": "b56bb1478c97bd6e",
+    "E/lt/lt.jsonl": "5a87a55a62890e82",
+    "E/lv/lv.jsonl": "ee1f1bbf1fbec0b5",
+    "E/sl/sl.jsonl": "8434508acea0b467",
+    "E/sv/sv.jsonl": "7f824e03d9dded2c",
+    "E/ga/ga.jsonl": "b37ec68879e557bc",
+    "E/is/is.jsonl": "f4fd2987b68efafe",
+    "E/mt/mt.jsonl": "162b4b487145ef9b",
+    "calibration-old": "b377f3dd2dbfa852",
+    "exam-v1": "cb4118dc0780cfba"
+  },
+  "strata": {
+    "A": {
+      "bg": 2974,
+      "da": 2984,
+      "de": 2976,
+      "en": 3000,
+      "es": 2948,
+      "fi": 2991,
+      "fr": 2962,
+      "hr": 2965,
+      "it": 2962,
+      "nb": 2941,
+      "nl": 2959,
+      "nn": 2999,
+      "pl": 2967,
+      "pt": 2972,
+      "ro": 2994,
+      "sk": 2963,
+      "tr": 2940
+    },
+    "B": {
+      "cs": 3000,
+      "el": 3000,
+      "et": 3000,
+      "hu": 3000,
+      "lt": 1950,
+      "lv": 1950
+    },
+    "C": {
+      "sl": 2907,
+      "sv": 2889
+    },
+    "C2": {
+      "cs": 413,
+      "el": 412,
+      "et": 413,
+      "ga": 413,
+      "hu": 413,
+      "is": 413,
+      "lt": 413,
+      "lv": 413,
+      "mt": 413,
+      "sl": 413,
+      "sv": 413
+    },
+    "E": {
+      "bg": 169,
+      "da": 170,
+      "de": 169,
+      "en": 170,
+      "es": 166,
+      "fi": 170,
+      "fr": 168,
+      "hr": 169,
+      "it": 170,
+      "nb": 169,
+      "nl": 170,
+      "nn": 169,
+      "pl": 169,
+      "pt": 170,
+      "ro": 170,
+      "sk": 170,
+      "tr": 166,
+      "cs": 169,
+      "el": 170,
+      "et": 170,
+      "hu": 170,
+      "lt": 170,
+      "lv": 170,
+      "sl": 169,
+      "sv": 169,
+      "ga": 165,
+      "is": 169,
+      "mt": 170
+    }
+  },
+  "resolutions": [
+    {
+      "language": "bg",
+      "text": "какво е влиянието на амоняка върху околната среда?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-bg-question-0105"
+    },
+    {
+      "language": "bg",
+      "text": "какво представляват постоянните органични замърсители?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-bg-question-0449"
+    },
+    {
+      "language": "bg",
+      "text": "circular economy стратегии",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-bg-retrieval-0855"
+    },
+    {
+      "language": "da",
+      "text": "genanvendelse af e-waste",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-da-retrieval-0877"
+    },
+    {
+      "language": "de",
+      "text": "was sind persistente organische schadstoffe?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-de-question-0040"
+    },
+    {
+      "language": "de",
+      "text": "schwefeldioxid emissionen",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0005"
+    },
+    {
+      "language": "de",
+      "text": "pfas grenzwerte",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0029"
+    },
+    {
+      "language": "de",
+      "text": "ozonschicht zustand",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0033"
+    },
+    {
+      "language": "de",
+      "text": "landwirtschaft stickstoff",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0036"
+    },
+    {
+      "language": "de",
+      "text": "e-waste entsorgung",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0076"
+    },
+    {
+      "language": "de",
+      "text": "gesundheitsfolgen luftverschmutzung",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0082"
+    },
+    {
+      "language": "de",
+      "text": "dürreperioden 2019",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0328"
+    },
+    {
+      "language": "de",
+      "text": "circular economy plan",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0619"
+    },
+    {
+      "language": "de",
+      "text": "grundwasserstand frankreich",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0724"
+    },
+    {
+      "language": "de",
+      "text": "lulucf verordnung",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-de-retrieval-0765"
+    },
+    {
+      "language": "en",
+      "text": "what does the european green deal mean for environmental policy?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-en-question-0077"
+    },
+    {
+      "language": "en",
+      "text": "what health effects are linked to long-term air pollution exposure?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-en-question-0669"
+    },
+    {
+      "language": "fi",
+      "text": "miten no2-pitoisuudet vaihtelevat vuodenaikojen mukaan?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-fi-question-0393"
+    },
+    {
+      "language": "fr",
+      "text": "quelles sont les causes de la déforestation en roumanie ?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-fr-question-0015"
+    },
+    {
+      "language": "fr",
+      "text": "émissions aviation 2030",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-fr-retrieval-0791"
+    },
+    {
+      "language": "fr",
+      "text": "pollinisateurs et pesticides",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-fr-retrieval-0821"
+    },
+    {
+      "language": "hr",
+      "text": "kako utječe mikroplastika na morske organizme?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-hr-question-0523"
+    },
+    {
+      "language": "hr",
+      "text": "buka u gradovima",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-hr-retrieval-0017"
+    },
+    {
+      "language": "hr",
+      "text": "zagađenje zraka u parizu",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-hr-retrieval-0580"
+    },
+    {
+      "language": "it",
+      "text": "cosa sono gli inquinanti organici persistenti?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-it-question-0107"
+    },
+    {
+      "language": "it",
+      "text": "emissioni gas serra italia 2022",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-it-retrieval-0848"
+    },
+    {
+      "language": "nb",
+      "text": "hva er status for natura 2000-områdene i polen?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-nb-question-0391"
+    },
+    {
+      "language": "nb",
+      "text": "liste over persistente organiske miljøgifter",
+      "intents": [
+        "exploratory",
+        "unknown"
+      ],
+      "kept": "exploratory",
+      "kept_id": "trn-nb-exploratory-0413"
+    },
+    {
+      "language": "nb",
+      "text": "co2 utslipp 2022",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-nb-retrieval-0044"
+    },
+    {
+      "language": "nb",
+      "text": "vannkvalitet i donau",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-nb-retrieval-0077"
+    },
+    {
+      "language": "nb",
+      "text": "no2 nivåer berlin",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-nb-retrieval-0646"
+    },
+    {
+      "language": "nb",
+      "text": "pfas grenseverdier",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-nb-retrieval-0650"
+    },
+    {
+      "language": "nb",
+      "text": "e-waste innsamling",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-nb-retrieval-0747"
+    },
+    {
+      "language": "nl",
+      "text": "hoe is de kwaliteit van het zwemwater in griekenland?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-nl-question-0277"
+    },
+    {
+      "language": "nl",
+      "text": "wat is de invloed van ammoniak op biodiversiteit?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-nl-question-0370"
+    },
+    {
+      "language": "nl",
+      "text": "hoeveel windparken zijn er in ierland?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-nl-question-0548"
+    },
+    {
+      "language": "nl",
+      "text": "hoe werkt de circulaire economie in de praktijk?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-nl-question-0659"
+    },
+    {
+      "language": "nn",
+      "text": "kva er effekten av plantevernmidlar på bier?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-nn-question-0247"
+    },
+    {
+      "language": "ro",
+      "text": "ce sunt poluenții organici persistenți?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-ro-question-0169"
+    },
+    {
+      "language": "sk",
+      "text": "čo sú persistentné organické znečisťovadlá?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-sk-question-0113"
+    },
+    {
+      "language": "sk",
+      "text": "biodiverzita v lese",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-sk-retrieval-0094"
+    },
+    {
+      "language": "sk",
+      "text": "mikroplastiky v oceánoch",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-sk-retrieval-0129"
+    },
+    {
+      "language": "sk",
+      "text": "úroveň pm10 v varšave",
+      "intents": [
+        "retrieval",
+        "unknown"
+      ],
+      "kept": "retrieval",
+      "kept_id": "trn-sk-retrieval-0321"
+    },
+    {
+      "language": "tr",
+      "text": "european green deal nedir?",
+      "intents": [
+        "question",
+        "unknown"
+      ],
+      "kept": "question",
+      "kept_id": "trn-tr-question-0004"
+    },
+    {
+      "language": "tr",
+      "text": "lulucf nedir ve nasıl çalışır?",
+      "intents": [
+        "exploratory",
+        "question"
+      ],
+      "kept": "question",
+      "kept_id": "trn-tr-question-0533"
+    }
+  ],
+  "drop_decisions": {
+    "by_id": 0,
+    "by_text": 23,
+    "by_source": 4
+  },
+  "c2_dropped": {
+    "el": 1
+  },
+  "drop_decisions_applied": 21,
+  "pre_dedup": 81449,
+  "unique_texts": 81404,
+  "dedup_dropped": 45,
+  "conflicts_resolved": 45,
+  "demarked": 16257,
+  "kept_marked": 5431,
+  "mix_rows": 81404,
+  "mix_sha256_16": "1e0e75eb65749835",
+  "mix_per_language": {
+    "bg": 3139,
+    "cs": 3582,
+    "da": 3153,
+    "de": 3134,
+    "el": 3582,
+    "en": 3168,
+    "es": 3113,
+    "et": 3581,
+    "fi": 3160,
+    "fr": 3127,
+    "ga": 578,
+    "hr": 3130,
+    "hu": 3583,
+    "is": 580,
+    "it": 3128,
+    "lt": 2532,
+    "lv": 2532,
+    "mt": 581,
+    "nb": 3102,
+    "nl": 3125,
+    "nn": 3166,
+    "pl": 3134,
+    "pt": 3141,
+    "ro": 3163,
+    "sk": 3129,
+    "sl": 3489,
+    "sv": 3470,
+    "tr": 3102
+  },
+  "mix_per_class": {
+    "claim": 15946,
+    "exploratory": 15964,
+    "question": 24598,
+    "retrieval": 21102,
+    "unknown": 3794
+  },
+  "calibration_rows": 4008,
+  "calibration_new_pool_rows": 2678,
+  "calibration_dedup_dropped": 0,
+  "calibration_drop_decisions": 27,
+  "calibration_sha256_16": "fdc1926378db7e9f",
+  "exam_total": 23718,
+  "exam_new": 2438,
+  "exam_drop_decisions": 82,
+  "exam_sha256_16": "e92055c1ff647940"
+}

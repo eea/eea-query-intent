@@ -36,6 +36,7 @@ CALIB_OLD = ROOT / "data" / "expanded_v3" / "calibration.jsonl"
 BANK = ROOT / "data" / "pilot" / "noq-short"
 POOL = ROOT / "data" / "pilot" / "v1-pools"
 HYGIENE = ROOT / "data" / "hygiene"
+DROP_DECISIONS = HYGIENE / "2026-09-17" / "drop_decisions.jsonl"
 
 INHOUSE = [
     "bg",
@@ -58,8 +59,10 @@ INHOUSE = [
 ]
 GPT_NATIVE = ["cs", "el", "et", "hu", "lt", "lv"]
 MT = ["sl", "sv"]
+CLOSED = ["ga", "is", "mt"]
 STARVED = GPT_NATIVE + MT
-ALL_LANGS = INHOUSE + GPT_NATIVE + MT + ["ga", "is", "mt"]
+LEGACY_LANGS = STARVED + CLOSED  # stratum C2 (starved) + D (closed) legacy rows
+ALL_LANGS = INHOUSE + GPT_NATIVE + MT + CLOSED
 
 EXPECTED_SCRIPT = {"bg": "cyrillic", "el": "greek"}
 LATIN = (
@@ -139,11 +142,48 @@ def has_mark(text: str, lang: str) -> bool:
     return t[-1] in ("?", ";") if lang == "el" else t.endswith("?")
 
 
+def load_drop_decisions() -> tuple[set[str], set[tuple[str, str]], set[str]]:
+    """Adjudicated rows to exclude (Gemma flags + assistant review).
+
+    Returns (by_id, by_lang_text, by_source_id). source_id-level drops
+    quarantine a concept across all its translations (the English source
+    rows carry no source_id and are unaffected).
+    """
+    by_id: set[str] = set()
+    by_text: set[tuple[str, str]] = set()
+    by_source: set[str] = set()
+    if DROP_DECISIONS.exists():
+        for line in DROP_DECISIONS.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            if rec.get("id"):
+                by_id.add(rec["id"])
+            if rec.get("source_id"):
+                by_source.add(rec["source_id"])
+            if rec.get("language") and rec.get("text"):
+                by_text.add((rec["language"], rec["text"].casefold()))
+    return by_id, by_text, by_source
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     EXAM_OUT.mkdir(parents=True, exist_ok=True)
 
+    drop_ids, drop_texts, drop_sources = load_drop_decisions()
     manifest: dict = {"inputs": {}, "strata": {}, "resolutions": []}
+    manifest["drop_decisions"] = {
+        "by_id": len(drop_ids),
+        "by_text": len(drop_texts),
+        "by_source": len(drop_sources),
+    }
+
+    def is_dropped(rec: dict, lang: str, text: str) -> bool:
+        return (
+            rec.get("id") in drop_ids
+            or rec.get("source_id") in drop_sources
+            or (lang, text.casefold()) in drop_texts
+        )
 
     def add(stratum: str, lang: str, path: Path, rows: list[dict], note: str = ""):
         manifest["inputs"][f"{stratum}/{lang}/{path.name}"] = sha256_16(path)
@@ -181,7 +221,7 @@ def main() -> None:
 
     # ------------------------------------------------------------ stratum C2: legacy v3
     print("stratum C2: legacy v3 rows (retention-filtered)")
-    legacy = [r for r in load(BASE_MIX) if r.get("language") in STARVED]
+    legacy = [r for r in load(BASE_MIX) if r.get("language") in LEGACY_LANGS]
     base_path_ok = BASE_MIX.exists()
     if base_path_ok:
         manifest["inputs"]["C2/expanded_v3/train.jsonl"] = sha256_16(BASE_MIX)
@@ -211,7 +251,12 @@ def main() -> None:
         rows_e.extend(normalize(r, "E") for r in rs)
 
     # ------------------------------------------------------------ dedup + conflicts
-    all_rows = rows_a + rows_b + rows_c + rows_c2 + rows_e
+    def dropped(r: dict) -> bool:
+        return is_dropped(r, r["language"], r["text"])
+
+    all_strata = rows_a + rows_b + rows_c + rows_c2 + rows_e
+    all_rows = [r for r in all_strata if not dropped(r)]
+    manifest["drop_decisions_applied"] = len(all_strata) - len(all_rows)
     all_rows.sort(key=lambda r: STRATUM_PRIORITY[r["stratum"]])
     groups: dict[tuple[str, str], list[dict]] = {}
     order: list[tuple[str, str]] = []
@@ -334,6 +379,7 @@ def main() -> None:
         seen_cal.add(key)
         cal_rows.append({k: r[k] for k in ("id", "intent", "language", "text")})
     cal_pool_new = 0
+    cal_drop_decisions = 0
     for lang in ALL_LANGS:
         p = POOL / "calib" / f"{lang}.jsonl"
         if not p.exists() and lang != "en":
@@ -343,6 +389,9 @@ def main() -> None:
             src = POOL / "en_calib_short.jsonl"
         for r in load(src):
             if r["language"] != lang:
+                continue
+            if is_dropped(r, lang, r["text"]):
+                cal_drop_decisions += 1
                 continue
             key = (lang, r["text"].casefold())
             if key in seen_cal:
@@ -368,6 +417,7 @@ def main() -> None:
     manifest["calibration_rows"] = len(cal_rows)
     manifest["calibration_new_pool_rows"] = cal_pool_new
     manifest["calibration_dedup_dropped"] = cal_dup
+    manifest["calibration_drop_decisions"] = cal_drop_decisions
     manifest["calibration_sha256_16"] = sha256_16(cal_path)
     print(
         f"calibration: {cal_path} ({len(cal_rows)} rows, "
@@ -380,13 +430,17 @@ def main() -> None:
     exam_rows = list(exam_old)
     seen_exam = {(r["language"], r["text"].casefold()) for r in exam_old}
     exam_new = 0
+    exam_drop_decisions = 0
     for lang in ALL_LANGS:
         p = POOL / "exam" / f"{lang}.jsonl"
-        if not p.exists():
+        if not p.exists() and lang != "en":
             raise SystemExit(f"missing exam pool: {p}")
         src = p if lang != "en" else POOL / "en_exam_short.jsonl"
         for r in load(src):
             if r["language"] != lang:
+                continue
+            if is_dropped(r, lang, r["text"]):
+                exam_drop_decisions += 1
                 continue
             key = (lang, r["text"].casefold())
             if key in seen_exam:
@@ -423,6 +477,7 @@ def main() -> None:
     )
     manifest["exam_total"] = len(exam_rows)
     manifest["exam_new"] = exam_new
+    manifest["exam_drop_decisions"] = exam_drop_decisions
     manifest["exam_sha256_16"] = sha256_16(exam_path)
     print(f"exam: {exam_path} ({len(exam_rows)} rows, {exam_new} new)")
 

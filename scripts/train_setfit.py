@@ -21,6 +21,7 @@ DEFAULT_DATA = ROOT / "data" / "multilingual" / "v1"
 DEFAULT_MODEL_DIR = ROOT / "models" / "setfit"
 ELIGIBLE = ("question", "exploratory", "claim")
 LABELS = ("question", "exploratory", "claim", "retrieval", "unknown")
+BINARY_LABELS = ("eligible", "ineligible")
 BACKBONE = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
@@ -33,6 +34,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test-file", default=str(DEFAULT_DATA / "test.jsonl"))
     parser.add_argument("--model-dir", default=str(DEFAULT_MODEL_DIR))
     parser.add_argument("--model-version", default="setfit-v1")
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--backbone", default=BACKBONE)
+    parser.add_argument(
+        "--binary",
+        action="store_true",
+        help="objective-aligned binary head (eligible vs ineligible)",
+    )
     return parser.parse_args()
 
 
@@ -45,28 +53,45 @@ def read_file(path: str) -> list[dict]:
 
 
 def train(args) -> object:
+    import random
+
+    import numpy as np
     import torch
     import torch.nn as nn
     from sentence_transformers import SentenceTransformer
     from setfit import SetFitHead, SetFitModel
 
+    if args.seed is not None:
+        # Fixed-seed discipline (pre-registration): head init and data
+        # shuffling are the stochastic parts of SetFit training.
+        torch.manual_seed(args.seed)
+        random.seed(args.seed)
+        np.random.seed(args.seed)
     device = "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"training on device: {device}")
 
-    encoder = SentenceTransformer(BACKBONE, device=device)
+    encoder = SentenceTransformer(args.backbone, device=device)
     # The MPS SDPA kernel does not support dropout; zeroing the p of all
     # dropout modules keeps training on MPS stable. For a frozen-encoder
     # linear head this has a negligible effect on the final classifier.
     for module in encoder.modules():
         if isinstance(module, nn.Dropout):
             module.p = 0.0
-    head = SetFitHead(in_features=384, out_features=len(LABELS), device=device)
-    model = SetFitModel(model_body=encoder, model_head=head, labels=list(LABELS))
+    labels = list(BINARY_LABELS) if args.binary else list(LABELS)
+    dim = encoder.get_sentence_embedding_dimension()
+    head = SetFitHead(in_features=dim, out_features=len(labels), device=device)
+    model = SetFitModel(model_body=encoder, model_head=head, labels=labels)
 
     rows = read_file(args.train_file)
     training_data = [row["text"] for row in rows]
-    y = [LABELS.index(row["intent"]) for row in rows]
-    print(f"training on {len(rows)} rows from {args.train_file}")
+    if args.binary:
+        y = [0 if row["intent"] in ELIGIBLE else 1 for row in rows]
+    else:
+        y = [LABELS.index(row["intent"]) for row in rows]
+    print(
+        f"training on {len(rows)} rows from {args.train_file} "
+        f"(binary={args.binary}, backbone={args.backbone}, seed={args.seed})"
+    )
 
     model.fit(
         training_data,
@@ -90,26 +115,30 @@ def load_model(args):
     return SetFitModel.from_pretrained(str(Path(args.model_dir)), device=device)
 
 
-def predict_row(model, text: str) -> tuple[str, float]:
+def predict_row(model, text: str, labels: tuple[str, ...]) -> tuple[str, float]:
     probabilities = model.predict_proba([text.replace("\n", " ")], as_numpy=True)[0]
     prob_map = {
-        label: float(prob) for label, prob in zip(LABELS, probabilities, strict=False)
+        label: float(prob) for label, prob in zip(labels, probabilities, strict=False)
     }
     top_intent = max(prob_map, key=prob_map.get)
-    eligible_probability = min(
-        1.0, max(0.0, sum(prob_map.get(label, 0.0) for label in ELIGIBLE))
-    )
+    if len(labels) == 2:  # binary head: P(eligible) is the eligible probability
+        eligible_probability = min(1.0, max(0.0, prob_map.get("eligible", 0.0)))
+    else:
+        eligible_probability = min(
+            1.0, max(0.0, sum(prob_map.get(label, 0.0) for label in ELIGIBLE))
+        )
     return top_intent, eligible_probability
 
 
 def emit_predictions(args, split: str, file: str, model) -> Path:
+    labels = BINARY_LABELS if args.binary else LABELS
     model_dir = Path(args.model_dir)
     out = model_dir / f"{split}-predictions.jsonl"
     rows = read_file(file)
     with out.open("w", encoding="utf-8") as handle:
         for row in rows:
             started = time.perf_counter()
-            intent, eligible_probability = predict_row(model, row["text"])
+            intent, eligible_probability = predict_row(model, row["text"], labels)
             latency = (time.perf_counter() - started) * 1000
             prediction = {
                 "id": row["id"],
@@ -128,14 +157,17 @@ def emit_predictions(args, split: str, file: str, model) -> Path:
 
 def write_manifest(args) -> None:
     model_dir = Path(args.model_dir)
+    labels = list(BINARY_LABELS) if args.binary else list(LABELS)
+    eligible_labels = ["eligible"] if args.binary else list(ELIGIBLE)
     manifest = {
-        "model_type": "setfit",
+        "model_type": "setfit-binary" if args.binary else "setfit",
         "model_version": args.model_version,
-        "backbone": BACKBONE,
+        "backbone": args.backbone,
         "artifact": str(model_dir),
-        "labels": list(LABELS),
-        "eligible_labels": list(ELIGIBLE),
+        "labels": labels,
+        "eligible_labels": eligible_labels,
         "train_file": args.train_file,
+        "seed": args.seed,
     }
     (model_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"

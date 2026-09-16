@@ -34,6 +34,12 @@ def main() -> None:
     parser.add_argument(
         "--out", default=str(ROOT / "models/setfit/acceptance-predictions.jsonl")
     )
+    parser.add_argument(
+        "--lowercase-input",
+        action="store_true",
+        help="lowercase each query before classification (matches the "
+        "service-side normalization of the lowercase-trained candidate)",
+    )
     args = parser.parse_args()
 
     adapter, manifest = load_adapter(Path(args.model), args.device)
@@ -50,6 +56,9 @@ def main() -> None:
         for line in Path(args.input).read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+    if args.lowercase_input:
+        for row in rows:
+            row["text"] = row["text"].lower()
 
     # warmup (first call includes lazy graph init)
     adapter.classify("warmup")

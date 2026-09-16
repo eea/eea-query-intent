@@ -189,6 +189,21 @@
       "qmark_nonquestion": 30
     }
   },
+  "v1/sl-mt": {
+    "rows": 2907,
+    "sha256_16": "af574733db8a3f88",
+    "flags": {
+      "qmark_nonquestion": 123
+    }
+  },
+  "v1/sv-mt": {
+    "rows": 2889,
+    "sha256_16": "5040aa3c53075396",
+    "flags": {
+      "unmarked_question": 1,
+      "qmark_nonquestion": 122
+    }
+  },
   "calibration": {
     "rows": 1330,
     "sha256_16": "b377f3dd2dbfa852",
@@ -410,5 +425,287 @@
     "flags": {
       "unmarked_question": 69
     }
+  },
+  "pool/calib/bg": {
+    "rows": 98,
+    "sha256_16": "e8d7cc4b1805b66c",
+    "flags": {}
+  },
+  "pool/calib/cs": {
+    "rows": 98,
+    "sha256_16": "6bd2ae21d013e461",
+    "flags": {}
+  },
+  "pool/calib/da": {
+    "rows": 96,
+    "sha256_16": "f391d6e8f7320116",
+    "flags": {}
+  },
+  "pool/calib/de": {
+    "rows": 94,
+    "sha256_16": "129f202d3954d7d8",
+    "flags": {}
+  },
+  "pool/calib/el": {
+    "rows": 98,
+    "sha256_16": "ddfea0c51596dddb",
+    "flags": {}
+  },
+  "pool/calib/es": {
+    "rows": 98,
+    "sha256_16": "30a6919b8ac8cb73",
+    "flags": {}
+  },
+  "pool/calib/et": {
+    "rows": 97,
+    "sha256_16": "5610bd38ab749bef",
+    "flags": {}
+  },
+  "pool/calib/fi": {
+    "rows": 97,
+    "sha256_16": "b1972ed2012a346b",
+    "flags": {}
+  },
+  "pool/calib/fr": {
+    "rows": 96,
+    "sha256_16": "95daad19591b85fd",
+    "flags": {}
+  },
+  "pool/calib/ga": {
+    "rows": 99,
+    "sha256_16": "7d6ae47cebaf767e",
+    "flags": {}
+  },
+  "pool/calib/hr": {
+    "rows": 94,
+    "sha256_16": "0e58a7f161a4829c",
+    "flags": {}
+  },
+  "pool/calib/hu": {
+    "rows": 97,
+    "sha256_16": "991af3fbed666cd4",
+    "flags": {}
+  },
+  "pool/calib/is": {
+    "rows": 98,
+    "sha256_16": "79ebea4cc0717a35",
+    "flags": {}
+  },
+  "pool/calib/it": {
+    "rows": 95,
+    "sha256_16": "19e5ab8fceb6944b",
+    "flags": {}
+  },
+  "pool/calib/lt": {
+    "rows": 96,
+    "sha256_16": "0b90599bf97febeb",
+    "flags": {}
+  },
+  "pool/calib/lv": {
+    "rows": 100,
+    "sha256_16": "5da17701ffd678b5",
+    "flags": {}
+  },
+  "pool/calib/mt": {
+    "rows": 97,
+    "sha256_16": "97f484f87291c935",
+    "flags": {}
+  },
+  "pool/calib/nb": {
+    "rows": 94,
+    "sha256_16": "c38086272d1e2886",
+    "flags": {}
+  },
+  "pool/calib/nl": {
+    "rows": 97,
+    "sha256_16": "c1b3808a94317f4e",
+    "flags": {}
+  },
+  "pool/calib/nn": {
+    "rows": 96,
+    "sha256_16": "a727fd0e239f4342",
+    "flags": {
+      "dupe_xlang": 2
+    }
+  },
+  "pool/calib/pl": {
+    "rows": 94,
+    "sha256_16": "aaed939b27d67a4f",
+    "flags": {}
+  },
+  "pool/calib/pt": {
+    "rows": 94,
+    "sha256_16": "2b92700cf29dbabf",
+    "flags": {
+      "dupe_xlang": 1
+    }
+  },
+  "pool/calib/ro": {
+    "rows": 95,
+    "sha256_16": "2708066fa23fe980",
+    "flags": {}
+  },
+  "pool/calib/sk": {
+    "rows": 96,
+    "sha256_16": "23553d74a632afe0",
+    "flags": {}
+  },
+  "pool/calib/sl": {
+    "rows": 96,
+    "sha256_16": "dfb030d995437997",
+    "flags": {}
+  },
+  "pool/calib/sv": {
+    "rows": 98,
+    "sha256_16": "212a991ab419871c",
+    "flags": {}
+  },
+  "pool/calib/tr": {
+    "rows": 97,
+    "sha256_16": "1f567d775e64a99e",
+    "flags": {}
+  },
+  "pool/exam/bg": {
+    "rows": 90,
+    "sha256_16": "93b3ad37cf3f3393",
+    "flags": {}
+  },
+  "pool/exam/cs": {
+    "rows": 90,
+    "sha256_16": "77ab5662c4abdce2",
+    "flags": {}
+  },
+  "pool/exam/da": {
+    "rows": 90,
+    "sha256_16": "0bc586cce8b235cc",
+    "flags": {}
+  },
+  "pool/exam/de": {
+    "rows": 90,
+    "sha256_16": "48c265cbe46b52fe",
+    "flags": {}
+  },
+  "pool/exam/el": {
+    "rows": 90,
+    "sha256_16": "516c8a19647eb19a",
+    "flags": {}
+  },
+  "pool/exam/es": {
+    "rows": 90,
+    "sha256_16": "25dcc64f08e52d97",
+    "flags": {}
+  },
+  "pool/exam/et": {
+    "rows": 90,
+    "sha256_16": "47cf4df1a01d025b",
+    "flags": {}
+  },
+  "pool/exam/fi": {
+    "rows": 90,
+    "sha256_16": "56539da5e46dad0c",
+    "flags": {}
+  },
+  "pool/exam/fr": {
+    "rows": 90,
+    "sha256_16": "8c64a441d297c29a",
+    "flags": {}
+  },
+  "pool/exam/ga": {
+    "rows": 90,
+    "sha256_16": "bd4da1db08f04510",
+    "flags": {}
+  },
+  "pool/exam/hr": {
+    "rows": 90,
+    "sha256_16": "7e0f185388695f91",
+    "flags": {}
+  },
+  "pool/exam/hu": {
+    "rows": 90,
+    "sha256_16": "6b4232d53be8e5f1",
+    "flags": {}
+  },
+  "pool/exam/is": {
+    "rows": 90,
+    "sha256_16": "0141daa295afc392",
+    "flags": {}
+  },
+  "pool/exam/it": {
+    "rows": 90,
+    "sha256_16": "4103ac66317ef030",
+    "flags": {}
+  },
+  "pool/exam/lt": {
+    "rows": 90,
+    "sha256_16": "639bcc875ce098c9",
+    "flags": {}
+  },
+  "pool/exam/lv": {
+    "rows": 90,
+    "sha256_16": "b849fafcfd52b801",
+    "flags": {}
+  },
+  "pool/exam/mt": {
+    "rows": 90,
+    "sha256_16": "dcbed0d52eed14c5",
+    "flags": {}
+  },
+  "pool/exam/nb": {
+    "rows": 90,
+    "sha256_16": "ebef71fcb26b4e3f",
+    "flags": {
+      "dupe_xlang": 7
+    }
+  },
+  "pool/exam/nl": {
+    "rows": 90,
+    "sha256_16": "370d4e2815daca54",
+    "flags": {}
+  },
+  "pool/exam/nn": {
+    "rows": 90,
+    "sha256_16": "8a779ec57b87ca0f",
+    "flags": {
+      "dupe_xlang": 3
+    }
+  },
+  "pool/exam/pl": {
+    "rows": 90,
+    "sha256_16": "d1ee19c43409867c",
+    "flags": {}
+  },
+  "pool/exam/pt": {
+    "rows": 90,
+    "sha256_16": "40b6dc90017ab58e",
+    "flags": {}
+  },
+  "pool/exam/ro": {
+    "rows": 90,
+    "sha256_16": "73e2dd69714c72d8",
+    "flags": {}
+  },
+  "pool/exam/sk": {
+    "rows": 90,
+    "sha256_16": "76526b672f24f3b0",
+    "flags": {
+      "dupe_xlang": 2
+    }
+  },
+  "pool/exam/sl": {
+    "rows": 90,
+    "sha256_16": "511add61c9fc9036",
+    "flags": {
+      "dupe_xlang": 1
+    }
+  },
+  "pool/exam/sv": {
+    "rows": 90,
+    "sha256_16": "00284ca725e843c5",
+    "flags": {}
+  },
+  "pool/exam/tr": {
+    "rows": 90,
+    "sha256_16": "b97190f0fdb79301",
+    "flags": {}
   }
 }

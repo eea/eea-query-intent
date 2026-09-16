@@ -1,0 +1,27 @@
+{"source_id": "v1ex-en-claim-0081", "reason": "claim 'urban canals cool streets': NLLB list-form in most languages, exam surface inconsistent"}
+{"source_id": "v1ex-en-claim-0084", "reason": "claim 'forests buffer storm surges': NLLB list-form in several languages"}
+{"source_id": "v1cl-en-claim-0096", "reason": "calib claim 'harbours block fish spawns': assertive force lost / garbled in bg fr hu nb sv and others"}
+{"language": "is", "text": "borgarslóðir kallir götur", "reason": "garbled NLLB claim translation (green taxes hit poor)"}
+{"language": "lv", "text": "metāna noplūde no atkritumu apglabāšanas", "reason": "assertive force lost (landfills leak methane fast)"}
+{"language": "bg", "text": "забрана на работата по емисиите", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "es", "text": "las políticas de reducción de las emisiones", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "et", "text": "mis on emas?", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "et", "text": "ookeanide happestumine", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "hr", "text": "više o emisijama", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "is", "text": "um loftslagsstefnu", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "is", "text": "um Parísarsamninginn", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "it", "text": "sul sistema di scambio di emissioni dell'UE", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "it", "text": "sull'accordo di Parigi", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "lt", "text": "dėl Paryžiaus susitarimo", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "lv", "text": "informācija par gaisa kvalitāti", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "mt", "text": "li l-pajjiżi għandhom", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "mt", "text": "aktar dwar il-miri tal-klima", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "nb", "text": "mer om plastavfall", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "nn", "text": "meir om skog", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "pl", "text": "w sprawie erozji gleby", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "pl", "text": "w sprawie odbudowy mokradła", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "pt", "text": "sobre o Acordo de Paris", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "sv", "text": "vilka gaser som orsakar smog", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "tr", "text": "bataklıklarda daha fazla", "reason": "bank question mistranslated: interrogative force lost"}
+{"language": "tr", "text": "AB ETS hakkında", "reason": "bank question mistranslated: interrogative force lost"}
+{"source_id": "v1ex-en-claim-0076", "reason": "claim 'tourism strains island water': NLLB drops the verb in es ('el turismo las islas aguas'); claim concepts degrade systematically in MT - concept quarantined"}

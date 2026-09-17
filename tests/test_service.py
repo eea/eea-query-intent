@@ -133,7 +133,10 @@ def test_health_and_classify_endpoints(
     assert payload["eligible"] is True
     assert payload["intent"] == "question"
     assert payload["latency_ms"] >= 0
-    assert adapter.calls == ["What is the ozone layer?"]
+    # The service casefolds the query before the model: setfit-v1 was
+    # trained on fully casefolded text, so the model must receive it that
+    # way (atomic pair with the model swap).
+    assert adapter.calls == ["What is the ozone layer?".casefold()]
 
 
 def test_policy_guard_reasons_come_from_the_endpoint(

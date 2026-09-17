@@ -112,7 +112,7 @@ def classify_query(
             model_version=model_version,
         )
 
-    intent, eligible_probability = adapter.classify(query)
+    intent, eligible_probability = adapter.classify(query.casefold())
     eligible_probability = min(1.0, max(0.0, eligible_probability))
     if eligible_probability < threshold:
         return ClassificationResult(

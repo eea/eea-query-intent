@@ -44,20 +44,36 @@ EN_CORPUS = ROOT / "data" / "training" / "v1" / "en.jsonl"
 V1 = ROOT / "data" / "training" / "v1"
 
 INHOUSE = [
-    "bg", "da", "de", "en", "es", "fi", "fr", "hr", "it", "nb", "nl", "nn",
-    "pl", "pt", "ro", "sk", "tr",
+    "bg",
+    "da",
+    "de",
+    "en",
+    "es",
+    "fi",
+    "fr",
+    "hr",
+    "it",
+    "nb",
+    "nl",
+    "nn",
+    "pl",
+    "pt",
+    "ro",
+    "sk",
+    "tr",
 ]
 GPT_RAW = ["cs", "el", "et", "hu", "lt", "lv"]
 
 EXPECTED_SCRIPT = {"bg": "cyrillic", "el": "greek"}  # everything else: latin
 
 INVISIBLE_RE = re.compile(
-    "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f"
-    "\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]"
+    "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]"
 )
 GARBLED_CHARS = set("•\ufffd\u25a0\u25ab")
-LATIN = frozenset(range(0x41, 0x7F)) | frozenset(range(0xC0, 0x180)) | frozenset(
-    range(0x1E00, 0x1F00)
+LATIN = (
+    frozenset(range(0x41, 0x7F))
+    | frozenset(range(0xC0, 0x180))
+    | frozenset(range(0x1E00, 0x1F00))
 )
 CYRILLIC = frozenset(range(0x400, 0x500))
 GREEK = frozenset(range(0x370, 0x400)) | frozenset(range(0x1F00, 0x2000))
@@ -176,9 +192,7 @@ def main() -> int:
         for line in EXAM.read_text(encoding="utf-8").splitlines()
         if line.strip()
     }
-    en_by_id = {
-        r["id"]: r["text"] for r in load_rows(EN_CORPUS)
-    }
+    en_by_id = {r["id"]: r["text"] for r in load_rows(EN_CORPUS)}
 
     corpa = corpus_list()
     report: dict[str, dict] = {}
@@ -267,8 +281,7 @@ def main() -> int:
             "sha256_16": sha256_of(path),
             "flags": dict(counts),
         }
-        print(f"{name:28} rows={len(rows):6} flags={dict(counts) or '-'}",
-              flush=True)
+        print(f"{name:28} rows={len(rows):6} flags={dict(counts) or '-'}", flush=True)
 
     flagged.close()
     report_path = out_dir / "scan_report.json"

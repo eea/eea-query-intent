@@ -38,8 +38,14 @@ def regate(preds_path: Path, threshold: float) -> list[dict]:
                 rec["eligible"] = False
                 rec["abstained"] = True
             else:
-                rec["intent"] = rec.get("raw_intent", rec["intent"])
-                rec["eligible"] = rec["intent"] in ELIGIBLE
+                raw = rec.get("raw_intent", rec["intent"])
+                rec["intent"] = raw
+                # binary head: the argmax label IS the routing decision
+                rec["eligible"] = (
+                    raw == "eligible"
+                    if raw in ("eligible", "ineligible")
+                    else raw in ELIGIBLE
+                )
                 rec["abstained"] = False
             out.append(rec)
     return out

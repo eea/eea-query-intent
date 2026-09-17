@@ -16,6 +16,7 @@ from eea_query_intent.contracts import AI_ELIGIBLE_INTENTS, Intent
 from eea_query_intent.dataset import DatasetRecord
 
 ELIGIBLE_INTENTS = frozenset(intent.value for intent in AI_ELIGIBLE_INTENTS)
+BINARY_LABELS = frozenset({"eligible", "ineligible"})
 
 
 class PredictionValidationError(ValueError):
@@ -58,7 +59,9 @@ class PredictionRecord:
 
         if not isinstance(record_id, str) or not record_id.strip():
             raise PredictionValidationError("'id' must be a non-empty string")
-        if intent not in {member.value for member in Intent}:
+        # The fine-grained intents, or the two labels of the binary head
+        # (objective-aligned router experiments).
+        if intent not in {member.value for member in Intent} | BINARY_LABELS:
             raise PredictionValidationError(f"unsupported intent '{intent}'")
         if not isinstance(eligible, bool):
             raise PredictionValidationError("'eligible' must be a boolean")
@@ -82,7 +85,11 @@ class PredictionRecord:
                 "'eligible_probability' must be between 0 and 1"
             )
 
-        expected_eligible = intent in ELIGIBLE_INTENTS and not abstained
+        if intent in BINARY_LABELS:
+            # binary head: the predicted label IS the routing decision
+            expected_eligible = intent == "eligible" and not abstained
+        else:
+            expected_eligible = intent in ELIGIBLE_INTENTS and not abstained
         if eligible != expected_eligible:
             raise PredictionValidationError(
                 f"prediction '{record_id}': 'eligible' must agree with "

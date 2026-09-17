@@ -132,6 +132,7 @@ def predict_row(model, text: str, labels: tuple[str, ...]) -> tuple[str, float]:
 
 def emit_predictions(args, split: str, file: str, model) -> Path:
     labels = BINARY_LABELS if args.binary else LABELS
+    is_binary = len(labels) == 2
     model_dir = Path(args.model_dir)
     out = model_dir / f"{split}-predictions.jsonl"
     rows = read_file(file)
@@ -140,10 +141,12 @@ def emit_predictions(args, split: str, file: str, model) -> Path:
             started = time.perf_counter()
             intent, eligible_probability = predict_row(model, row["text"], labels)
             latency = (time.perf_counter() - started) * 1000
+            # binary head: the argmax label IS the routing decision
+            eligible = intent == "eligible" if is_binary else intent in ELIGIBLE
             prediction = {
                 "id": row["id"],
                 "intent": intent,
-                "eligible": intent in ELIGIBLE,
+                "eligible": eligible,
                 "eligible_probability": eligible_probability,
                 "confidence": max(eligible_probability, 1 - eligible_probability),
                 "abstained": False,

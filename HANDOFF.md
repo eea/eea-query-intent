@@ -71,14 +71,37 @@ were derived, and backbone never trained. Fixed:
    Flags: `.pipeline/v1_<family>_train_done.flag`,
    `.pipeline/v1_all_families_done.flag` when all three are done.
    Expected total: ~2.5-3.5 h.
-2. `scripts/v1_post_chain.sh` (launched right after) waits for the chain
-   flag, locks the cross-family finalist (`v1_lock_finalist.py`, same
-   calibration rule, writes `models/finalist/lock.json`), runs
-   `v1_canonical_exam.py <finalist> <threshold>` **exactly once**
-   (refuses if predictions already exist), writes the formal per-language
-   report, copies everything to `reports/v1_overnight/`, and touches
-   `.pipeline/v1_overnight_done.flag` (or `v1_overnight_failed.flag`).
-   Log: `/tmp/v1_post_chain.log`. **It deliberately stops there.**
+2. Two-wave completion (both waiters running, caffeinate-guarded):
+   - `scripts/v1_binary_rerun.sh` waits for the chain flag, then completes
+     the binary family (s1 model reused; s2+s3 trained with the fixed
+     binary prediction writer; thresholds; selection) and touches
+     `.pipeline/v1_binary_rerun_done.flag`. Log: /tmp/v1_binary_rerun.log.
+   - `scripts/v1_post_chain2.sh` waits for BOTH flags, locks the
+     cross-family finalist (`v1_lock_finalist.py`, calibration only,
+     writes `models/finalist/lock.json`), runs `v1_canonical_exam.py
+     <finalist> <threshold>` **exactly once** (refuses if predictions
+     already exist), writes the formal per-language report, copies
+     everything to `reports/v1_overnight/`, and touches
+     `.pipeline/v1_overnight_done.flag` (or `v1_overnight_failed.flag`).
+     Log: /tmp/v1_post_chain2.log. **It deliberately stops there.**
+   Expected: backbone done ~04:10, binary rerun done ~04:45, exam +
+   decision package ~05:00.
+
+## Incident 2 (2026-09-17 ~03:10, recovered): binary-family evaluation path
+
+The binary family aborted at seed 1's threshold step: `evaluate` rejected
+`intent: "eligible"` (the binary head's label is not in the 5-class Intent
+enum). Three 5-class-only assumptions fixed, all committed:
+- `train_setfit.py` emit_predictions: the binary argmax label IS the
+  routing decision (the old code computed `eligible` against the 5-class
+  eligible set, so it was False for every binary row).
+- `sweep_acceptance.py` regate: same binary-aware recomputation.
+- `src/eea_query_intent/metrics.py` PredictionRecord: accepts the two
+  binary labels and applies the binary consistency semantics.
+- binary s1's existing calibration predictions were post-hoc corrected
+  (1,812 eligible bools flipped) - no re-inference needed.
+- 27/27 pytest + ruff clean after the changes. d1 numbers are unaffected
+  (5-class path unchanged); d1 completed 02:46 with SELECTED=setfit-v1-s2.
 
 ## Finding: the 1% calibration gate is unreachable (protocol fallback in effect)
 

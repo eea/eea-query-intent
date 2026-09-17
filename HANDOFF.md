@@ -86,6 +86,8 @@ were derived, and backbone never trained. Fixed:
      Log: /tmp/v1_post_chain2.log. **It deliberately stops there.**
    Expected: backbone done ~04:10, binary rerun done ~04:45, exam +
    decision package ~05:00.
+   **ACTUAL: backbone 04:56, binary rerun 05:19, exam 05:23 - all done,
+   see 'Overnight result' above. No background processes remain.**
 
 ## Incident 2 (2026-09-17 ~03:10, recovered): binary-family evaluation path
 
@@ -121,6 +123,49 @@ explicit fallback path, not a protocol change. If the user wants the gate
 satisfiable, the fix is a version-bumped calibration redesign (the new
 2,678-row pool slice is actually easy: 0.4% FP; the old 1,330 slice is the
 hard part) - a morning decision, not an overnight intervention.
+
+## Overnight result (2026-09-17, DECISION PENDING)
+
+**All background work finished.** Backbone 04:56, binary rerun 05:19, single
+exam pass 05:23. Nothing is running now; production setfit-v4 serves
+unchanged.
+
+- **Locked finalist: `models/setfit-v1e5-s3`** (backbone family =
+  intfloat/multilingual-e5-small, seed 3, threshold 0.98). Only family
+  whose seeds met the 1% calibration FP gate (all three at 0.0 FP; d1 and
+  binary missed at 5-7.5% on the off-distribution calibration set - known
+  to overestimate, production v4 also reads 8.5% FP on it).
+- **Exam v2 (23,718 rows) @0.98:** zero keyword false-positives in ALL 28
+  languages (worst 0.0000 vs the 1% gate); avg eligible recall 0.757;
+  weak languages fixed (mt 0.738, ga 0.635, is 0.702 vs production
+  0.128/0.331/0.453). Weak spot: short queries (2-5 words) 0.440 pooled;
+  English weakest long language (0.576).
+- **Deterministic threshold curve from the single raw pass** (no
+  re-inference): 0.97 -> 0.0000 FP / 0.809 recall; 0.96 -> 0.0025 (da) /
+  0.841; **0.95 -> 0.0050 (mt) / 0.859** (en 0.762, mt 0.837, ga 0.758,
+  is 0.830, short pooled 0.561); 0.94 -> 0.0075 (mt) / 0.874; 0.92 ->
+  0.0125 (mt) / 0.897. At 0.95 e5 beats production v4 on both safety
+  (0.5% vs 1.0% worst FP) and recall (~0.86 vs 0.851) - no exact
+  comparability (new exam).
+- **e5-small is size-neutral with production** (hidden 384 x 12 layers,
+  ~112M params, 448.8 MB safetensors; dir 479 MB) - no deployment
+  envelope change.
+- **Incident 3 (recovered, no data loss):** the exam completed its single
+  inference pass (23,718 predictions on disk) but the report step treated
+  `evaluate`'s expected exit-1-on-unmet-five-class-gate as fatal (same
+  class as Incident 1). `v1_canonical_exam.py` now validates the report
+  JSON, not the exit code; the formal report was recovered from the gated
+  predictions (no second inference) and saved to
+  `reports/v1_canonical_exam_setfit-v1e5-s3.json` + `reports/v1_overnight/`
+  (exam + lock + 3 family selections). `.pipeline/v1_overnight_failed.flag`
+  replaced by `.pipeline/v1_overnight_done.flag`.
+- **Promotion decision (USER):** options - (A) promote e5-s3 @0.95 (0.5%
+  worst FP, 0.859 recall; threshold picked from the single exam run, as
+  v4's 0.98 was), (B) promote e5-s3 @0.98 (0.000 FP, 0.757 recall),
+  (C) one measurement-only exam pass on d1-s2 (~15 min, protocol
+  deviation) before deciding, (D) keep production v4, treat e5 as
+  next-iteration candidate. Production `models/setfit` + the launchd
+  service remain untouched until the user decides.
 
 ## What to do in the morning (in order)
 

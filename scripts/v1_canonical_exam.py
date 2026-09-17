@@ -85,10 +85,15 @@ def main() -> int:
         capture_output=True,
         text=True,
     )
-    if res.returncode != 0 or not res.stdout.strip():
+    # evaluate exits 1 when the formal five-class gate is unmet while still
+    # printing the full report - validate the report, not the exit code.
+    if not res.stdout.strip():
         print(f"evaluate FAILED: {res.stderr[:500]}")
         return 1
     report = json.loads(res.stdout)
+    if not isinstance(report, dict) or "error" in report or "languages" not in report:
+        print(f"evaluate FAILED: {res.stderr[:500]}")
+        return 1
     report_out.write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
     )

@@ -21,14 +21,17 @@ case "${FAMILY}" in
   d1)
     PREFIX="setfit-v1"
     EXTRA=()
+    TRAIN_FILE="data/pilot/v1/train.jsonl"
     ;;
   binary)
     PREFIX="setfit-v1b"
     EXTRA=(--binary)
+    TRAIN_FILE="data/pilot/v1/train.jsonl"
     ;;
   backbone)
     PREFIX="setfit-v1e5"
     EXTRA=(--backbone intfloat/multilingual-e5-small)
+    TRAIN_FILE="data/pilot/v1/train.jsonl"
     ;;
   *)
     echo "unknown family: ${FAMILY}"
@@ -46,7 +49,7 @@ for SEED in 1 2 3; do
   else
   echo "=== ${FAMILY} seed ${SEED}: train start $(date) ==="
   uv run python scripts/train_setfit.py \
-    --train-file data/pilot/v1/train.jsonl \
+    --train-file "${TRAIN_FILE}" \
     --calibration-file data/pilot/v1/calibration.jsonl \
     --model-dir "${DIR}" \
     --model-version "setfit-v1-${FAMILY}" \

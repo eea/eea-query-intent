@@ -4,9 +4,9 @@ Checks, per language shard in ``data/acceptance/v1/<lang>.jsonl``:
 
 1. row integrity: non-empty, <= 20 words, no intra-file duplicate
    (case-insensitive), per-intent counts equal the acceptance targets;
-2. no case-insensitive text overlap with any training / calibration /
-   regression file (``data/expanded_v2``, ``data/english_only``,
-   ``data/seed``, ``data/multilingual/v1``);
+2. no case-insensitive text overlap with any training / calibration file
+   (the frozen v1 mix + calibration sets, plus every corpus in
+   data/training/v1);
 3. per-language character-set sanity (native script + Latin acronyms);
 4. template_id uniqueness inside the corpus and zero collision with the
    training template ids (translation/template leakage guard);
@@ -36,12 +36,9 @@ TARGETS = {
 INTENTS = ("question", "exploratory", "claim", "retrieval", "unknown")
 
 EXISTING_FILES = (
-    "data/expanded_v2/train.jsonl",
-    "data/expanded_v2/calibration.jsonl",
-    "data/english_only/train.jsonl",
-    "data/english_only/calibration.jsonl",
-    "data/seed/english.jsonl",
-    "data/multilingual/v1/test.jsonl",
+    "data/pilot/v1/train.jsonl",
+    "data/pilot/v1/calibration.jsonl",
+    "data/pilot/v1/calibration_old.jsonl",
 )
 
 

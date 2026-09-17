@@ -14,9 +14,9 @@ threshold are treated as no-AI / abstained), and reports, per language:
 
 Usage:
     uv run python scripts/evaluate_per_language.py \
-        --gold data/multilingual/v1/test.jsonl \
-        --predictions models/setfit-en/test-predictions.jsonl \
-        --threshold 0.86 [--report reports/<name>.json]
+        --gold data/acceptance/v2/test.jsonl \
+        --predictions models/setfit/exam-v2-predictions-gated.jsonl \
+        --threshold 0.95 [--report reports/<name>.json]
 """
 
 from __future__ import annotations

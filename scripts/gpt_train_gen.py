@@ -37,10 +37,9 @@ OUT_DIR = ROOT / "data" / "training" / "v1"
 # every dataset a training row must stay disjoint from
 DEDUP_DIRS = [
     ROOT / "data" / "acceptance" / "v1",
-    ROOT / "data" / "expanded_v2",
-    ROOT / "data" / "english_only",
-    ROOT / "data" / "seed",
-    ROOT / "data" / "multilingual" / "v1",
+    ROOT / "data" / "acceptance" / "v2",
+    ROOT / "data" / "pilot" / "v1",
+    ROOT / "data" / "banks" / "v1-short",
 ]
 
 

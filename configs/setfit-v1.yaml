@@ -1,0 +1,45 @@
+# Training recipe for the production model "setfit-v1"
+# Recorded for reproducibility; see docs/DATA_PROVENANCE.md for data provenance.
+#
+# The exact command (run from the repo root, uv environment):
+#
+#   uv run python scripts/train_setfit.py \
+#     --train-file data/pilot/v1/train.jsonl \
+#     --calibration-file data/pilot/v1/calibration.jsonl \
+#     --test-file data/acceptance/v2/test.jsonl \
+#     --model-dir models/setfit-v1e5-s3 \
+#     --model-version setfit-v1-backbone \
+#     --backbone intfloat/multilingual-e5-small \
+#     --seed 3
+#
+# then seed selection (models/setfit-v1e5/selection.json), threshold, and the
+# promotion manifest patch (abstain_threshold 0.95, model_version setfit-v1).
+
+model_version: setfit-v1
+backbone: intfloat/multilingual-e5-small
+backbone_revision: pinned-at-training-time  # verify the exact SHA in the HF cache before the HF push
+architecture: setfit-linear-head
+labels: [question, exploratory, claim, retrieval, unknown]
+eligible_labels: [question, exploratory, claim]
+routing: binary (sum of eligible probabilities >= threshold, else abstain fail-closed)
+seeds: [1, 2, 3]
+selected_seed: 3
+selection_rule: highest calibration eligible recall among seeds meeting the 1% worst-language no-AI FP gate (fallback: highest recall)
+epochs: 2
+batch_size: 64
+head_learning_rate: 0.01
+body_learning_rate: 0.00001
+train_file: data/pilot/v1/train.jsonl   # 81,404 rows, sha256_16 1e0e75eb65749835
+calibration_file: data/pilot/v1/calibration.jsonl  # 4,008 rows, sha256_16 a1e99870d67b4f9e
+abstain_threshold: 0.95
+threshold_policy: >
+  Pre-registered calibration-only derivation was in fallback mode (the 1%
+  worst-language gate is unreachable on the 4,008-row calibration for every
+  family). 0.95 was taken from the single canonical exam-v2 sweep
+  (worst-language FP 0.005, avg recall 0.859) — user-approved deviation,
+  2026-09-17. The exam was run exactly once at threshold 0.0 on the locked
+  finalist; all gated views are re-derived from that single pass.
+input_normalization: query.casefold() in the service (atomic with the model)
+device_trained: mps (Apple M1 Pro)
+promoted: 2026-09-17
+rollback: models/setfit-v4-rollback (until the HF push + container build are verified)

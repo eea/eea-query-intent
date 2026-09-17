@@ -1,0 +1,48 @@
+{
+  "description": "Frozen artifacts of the production query-intent classifier (setfit-v1). Do not modify; any change invalidates the recorded benchmark.",
+  "created": "2026-09-17",
+  "artifacts": {
+    "training_mix": {
+      "file": "data/pilot/v1/train.jsonl",
+      "rows": 81404,
+      "sha256_16": "1e0e75eb65749835"
+    },
+    "calibration": {
+      "file": "data/pilot/v1/calibration.jsonl",
+      "rows": 4008,
+      "sha256_16": "a1e99870d67b4f9e"
+    },
+    "calibration_old": {
+      "file": "data/pilot/v1/calibration_old.jsonl",
+      "rows": 1330,
+      "sha256_16": "b377f3dd2dbfa852"
+    },
+    "exam_v1": {
+      "file": "data/acceptance/v1/test.jsonl",
+      "rows": 21280,
+      "sha256_16": "cb4118dc0780cfba"
+    },
+    "exam_v2": {
+      "file": "data/acceptance/v2/test.jsonl",
+      "rows": 23718,
+      "sha256_16": "79fca1bb9edab755"
+    },
+    "drop_decisions": {
+      "file": "data/hygiene/2026-09-17/drop_decisions.jsonl",
+      "rows": 27,
+      "sha256_16": "8d0964f8456bff78"
+    },
+    "model": {
+      "dir": "models/setfit",
+      "manifest": "59bae0548d49dea9",
+      "weights": "7a77d5da5ee721c7",
+      "head": "0a556c486793dbcb",
+      "tokenizer": "a58ef5663dc62ea9",
+      "exam_v2_raw_predictions": "e73ecfd56266f56c"
+    }
+  },
+  "benchmark": {
+    "file": "docs/benchmark-results/setfit-v1.json",
+    "threshold": 0.95
+  }
+}

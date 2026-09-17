@@ -107,15 +107,15 @@ def corpus_avoid_set() -> set[str]:
     """Texts a new acceptance row must stay disjoint from (training data).
 
     Used to filter top-up rows at generation time: a top-up row that
-    duplicates training text would be rejected by
-    repair_acceptance_overlaps.py later, wasting the top-up slot.
+    duplicates training text would be rejected at merge time, wasting the
+    top-up slot.
     """
     seen = set()
     for d in (
-        ROOT / "data" / "expanded_v2",
-        ROOT / "data" / "english_only",
-        ROOT / "data" / "seed",
-        ROOT / "data" / "multilingual" / "v1",
+        ROOT / "data" / "acceptance" / "v1",
+        ROOT / "data" / "acceptance" / "v2",
+        ROOT / "data" / "pilot" / "v1",
+        ROOT / "data" / "banks" / "v1-short",
     ):
         if not d.exists():
             continue

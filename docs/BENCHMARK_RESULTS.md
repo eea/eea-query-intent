@@ -1,187 +1,37 @@
 # Benchmark results
 
-## Final model: `setfit-v3` — all 28 languages (current)
+## Current: setfit-v1 (production)
 
-The current shipping model is **SetFit only**. The fastText candidate was
-removed from the service and codebase: it lost the bake-off and its adapter
-was also incorrect (fastText returns `__label__`-prefixed labels and
-`k=1` by default, so the aggregate eligible probability could not be
-computed). Historical fastText numbers remain in the v1 section below, marked
-as a rejected candidate.
+SetFit linear head on `intfloat/multilingual-e5-small`, threshold **0.95**,
+trained on the frozen 81,404-row mix (`data/pilot/v1/train.jsonl`).
 
-`setfit-v3` is trained on the hand-authored English anchor bank plus
-GPT-5.6-Sol QA'd per-row translations for all 27 other supported languages
-(11,772 train / 1,330 calibration rows). Evaluated on the held-out test split
-(25 languages present, 29 rows each), gated per language on the no-AI
-false-routing rate (PASS = ≤1%):
+Canonical measurement — frozen exam v2 (23,718 rows), single inference pass:
 
-| threshold | languages passing | failing |
+| metric | value |
+|---|---|
+| average eligible recall | **0.859** |
+| worst-language no-AI false positive | **0.005** (Maltese, 2/400) — inside the 1% gate |
+| average abstention | 0.546 |
+
+Full per-language table: **`docs/benchmark-results/setfit-v1.json`**
+(raw predictions in `models/setfit/exam-v2-predictions.jsonl`; any other
+gated view re-derives deterministically via `scripts/sweep_acceptance.py regate`).
+
+Threshold provenance: the pre-registered calibration-only derivation was in
+fallback mode (the 1% worst-language gate is unreachable on the 4,008-row
+calibration for every candidate family); 0.95 was chosen from the single
+exam-v2 sweep — worst-language FP 0.005, average recall 0.859 — a
+user-approved deviation recorded in `configs/setfit-v1.yaml`.
+
+## Model history
+
+| model | backbone | outcome |
 |---|---|---|
-| 0.85 | 19/25 | is, fi, it, lt, pt, sk |
-| 0.90 | 22/25 | fi, is, sk |
-| 0.95 | 24/25 | sk |
-| **0.98 (chosen)** | **25/25** | — |
+| setfit-v3 | multilingual MiniLM-L12 | superseded; fastText lost the ADR 0001 bake-off (rejected candidate) |
+| setfit-v4 | multilingual MiniLM-L12 | production until 2026-09-17; acceptance gate decided in ADR 0003; kept as rollback artifact |
+| **setfit-v1** | multilingual-e5-small | **current production** (clean version name; iteration-v1 e5 finalist, seed 3) |
 
-The `0.98` threshold was chosen as the **calibrated value** (the threshold
-that minimizes the worst-language no-AI false-positive rate on the
-calibration split) and it is fail-closed. It keeps the held-out test split
-at 0 false routes for every language. The cost is lower eligible-query
-recall (the fail-closed trade-off), which is expected to improve as
-native-speaker-reviewed data reaches the 300-per-language bar.
-
-Known hard cases (from the calibration split, not the test split): a pasted
-URL (`https://eea.example/air`, rated ~0.98) and short topical phrases
-("EU law on climate", ~0.99). The URL is now caught by a deterministic
-**policy guard** (reason `url`) before the model; short topical phrases remain
-the irreducible no-AI/eligible boundary and are the main reason the threshold
-is held at `0.98`.
-
-**Honest gap (revised 2026-09-11):** the test split has only 29 rows per
-language, so "0/9 no-AI false routes" is not strong evidence of a ≤1% rate.
-The first real acceptance measurement (below) showed the gap is not only
-data volume — the model itself misroutes confident "topic + location"
-retrieval phrases, which the v1 test split was too small and too close to
-the training distribution to expose.
-
-## Acceptance measurement: English (2026-09-11)
-
-The first acceptance-set shard (spec: [`acceptance-spec.md`](acceptance-spec.md))
-is complete for English: 760 natively generated rows (150 question / 120
-exploratory / 90 claim / 350 retrieval / 50 unknown), GPT-5.6-Sol
-adversarially QA'd (710 ok / 81 fix / 34 drop + 17 top-ups), zero
-overlap with any training data. The remaining 27 languages are generated
-the same way.
-
-`setfit-v3` evaluated on the English acceptance shard (360 eligible / 400
-no-AI), binary routing at each threshold:
-
-| threshold | no-AI false-route | eligible recall | abstention |
-|---|---|---|---|
-| 0.80 | 21.0% | 88.3% | 47% |
-| 0.90 | 14.2% | 83.6% | 53% |
-| 0.95 | 8.5% | 77.8% | 59% |
-| 0.98 (deployed) | 5.0% | 65.0% | 67% |
-| 0.99 | 3.0% | 58.3% | 71% |
-| 0.995 | 2.0% | 49.4% | 76% |
-| 0.999 | 0.5% | 32.2% | 85% |
-
-No threshold passes the acceptance gates. The ≤1% no-AI false-route gate
-is only reachable near 0.999+, where ~85% of all queries abstain. Error
-analysis of the 20 false AI routes: 19/20 are confident (p≈0.99–1.0)
-"topic + location" retrieval phrases (*pollinator decline Europe*,
-*floods in Germany*, *offshore wind Denmark*) — the training bank's no-AI
-side was document-type heavy (SOER/PDF/data/maps) and underrepresented
-this shape. Exploratory is the weakest eligible subtype (72/120 abstained;
-79 of the 126 missed eligible queries sit in the 0.85–0.98 band).
-
-**Remediation (in progress):** a large, diverse, natively generated
-training corpus (`data/training/v1`, ~3,000 rows/language weighted toward
-the hard boundary) is being generated with the same GPT pipeline, then the
-head is retrained and re-measured against the held-out acceptance shards.
-The acceptance set itself stays untouched by training.
-
----
-
-## v1 bake-off: dataset v1 (2026-09-10) — historical
-
-Reproducible evidence for the first real bake-off of the two candidate
-adapters on `data/multilingual/v1` (6,793 rows, 28 languages, 56 synthetic
-templates + the 118-row English seed; split per template so no template
-leaks across splits).
-
-Raw per-language reports: [`reports/run-2026-09-10-v1/`](../reports)
-(git-ignored by default — regenerate with the commands below).
-
-## Deployment profile measured
-
-- Machine: Apple Silicon (M-series) arm64, uv-managed CPython 3.12.13
-- SetFit candidate served on `mps`; fastText candidate on CPU
-- Warm single-query latency: ~10–30 ms (SetFit), <1 ms (fastText)
-- Service RSS (SetFit, model loaded): ~312 MiB
-- Artifact sizes: SetFit 466 MB (fp32 safetensors), fastText 6.7 MB (ftz)
-
-The target deployment is a small x86-64/AVX2 CPU with ~1–2 GB RAM; ARM/MPS
-numbers above are a latency upper-bound reference, not the deployment
-profile. INT8/ONNX export of the SetFit artifact is the documented next
-step to shrink the 466 MB fp32 file toward ~120 MB.
-
-## Raw (uncalibrated) test split
-
-| candidate | global no-AI FP | worst-language no-AI FP | languages >1% FP | eligible missed |
-|---|---|---|---|---|
-| fastText (raw) | 24/225 (10.7%) | 88.9% (pt) | 7/28 | 64/500 (12.8%) |
-| SetFit (raw) | 28/225 (12.4%) | 66.7% (is) | 10/28 | 18/500 (3.6%) |
-
-Both candidates fail the strict five-class acceptance gates
-(macro-F1 ≥ 0.95, eligible precision ≥ 0.98, ≥300 reviewed examples per
-language). The dominant errors are **subtype confusion**
-(question/exploratory/claim and retrieval/unknown), not dangerous routing:
-on English alone both models route the binary gate correctly on all but a
-handful of subtype edges.
-
-## Calibrated (abstention threshold) test split
-
-The abstention threshold is chosen on the calibration split for the
-smallest threshold whose worst-language no-AI false-positive rate is ≤ 1%:
-
-- **SetFit → threshold 0.86** (meets the target on calibration: 0.000)
-- fastText → no threshold meets the target (best 0.222 at 0.98)
-
-| candidate (gated) | languages >1% no-AI FP | worst no-AI FP | worst eligible recall | abstained |
-|---|---|---|---|---|
-| SetFit @0.86 | 1/28 (is) | 44.4% (is, 2/9 rows) | 10% | 45.9% |
-| fastText @0.98 | 2/28 (de, pt) | 88.9% (pt) | 20% | 53.9% |
-
-The single remaining over-target language for SetFit is Irish, where 2 of
-9 no-AI test rows were false-routed — sample noise at n=9, not a stable
-failure mode (Irish was clean on calibration).
-
-## Diagnosis of the residual errors
-
-The high-confidence false routes concentrate in a handful of languages
-(pt, et, is) and trace back to **synthetic data quality**, not model
-capacity: several machine-translated template fills produce broken grammar
-(e.g. Portuguese "conjunto de dados de a gestão de resíduos", double
-articles in Italian/German topic fills), and the model faithfully learns
-the surface form of the corrupted template. The English in-sample
-confusion matrix is clean apart from exploratory↔claim edges.
-
-Consequences, recorded honestly:
-
-1. The acceptance gates are doing their job — they reject a prototype
-   dataset rather than promote a model that is only good on average.
-2. The production-blocking gap is **native-speaker-reviewed data**
-   (per `docs/annotation-spec.md`: validation/calibration/test records
-   require `native_reviewed`), not a larger model.
-3. SetFit (multilingual MiniLM-L12 + linear head) is the shipping default
-   candidate: it is the only candidate that meets the worst-language
-   no-AI target on calibration, and it has far better eligible recall
-   (3.6% missed vs 12.8% raw).
-4. The abstention threshold buys safety at a coverage cost: at 0.86,
-   ~30% of eligible calibration queries are abstained. Lowering the
-   threshold after the native-review data exists is the planned trade
-   lever (see `docs/benchmark-spec.md`).
-
-## Reproduce (historical — inputs removed)
-
-> The v1 bake-off inputs are no longer in the tree: the fastText candidate
-> (`train_fasttext.py`, `models/fasttext`) and the v1 template dataset
-> (`data/multilingual/v1/train|validation|calibration.jsonl`,
-> `data/templates/`, `scripts/generate_multilingual.py`) were removed once the
-> English-bank + per-row-translation pipeline replaced them. The commands
-> below are kept for the record only. The current pipeline is documented in
-> `docs/runbook.md`.
-
-```bash
-uv sync --all-groups
-uv run python scripts/train_fasttext.py
-uv run python scripts/train_setfit.py
-uv run python scripts/calibrate.py fasttext
-uv run python scripts/calibrate.py setfit
-uv run python scripts/apply_threshold.py fasttext
-uv run python scripts/apply_threshold.py setfit
-uv run eea-query-intent evaluate \
-  --gold data/multilingual/v1/test.jsonl \
-  --predictions models/setfit/test-predictions-gated.jsonl \
-  --minimum-eligible-count 0 --minimum-no-ai-count 0
-```
+The ADR 0001 bake-off process, the ADR 0002 binary-gate design, and the
+iteration-v1 pre-registration are in `docs/adr/` and
+`docs/experiments/`. Historical fastText numbers from the v3 era are in git
+history (removed from this document with the v4-era content).

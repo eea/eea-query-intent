@@ -1,12 +1,11 @@
-"""Train the SetFit (multilingual MiniLM L6) candidate and emit predictions.
+"""Train a SetFit candidate and emit predictions.
 
-Usage:
-    uv run python scripts/train_setfit.py
+Usage (production v1 mix):
     uv run python scripts/train_setfit.py \
-        --train-file data/english_only/train.jsonl \
-        --calibration-file data/english_only/calibration.jsonl \
-        --test-file data/multilingual/v1/test.jsonl \
-        --model-dir models/setfit-en --model-version setfit-en-v1
+        --train-file data/pilot/v1/train.jsonl \
+        --calibration-file data/pilot/v1/calibration.jsonl \
+        --model-dir models/setfit-v1e5-s3 --model-version setfit-v1 \
+        --backbone intfloat/multilingual-e5-small --seed 3
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DATA = ROOT / "data" / "multilingual" / "v1"
+DEFAULT_DATA = ROOT / "data" / "pilot" / "v1"
 DEFAULT_MODEL_DIR = ROOT / "models" / "setfit"
 ELIGIBLE = ("question", "exploratory", "claim")
 LABELS = ("question", "exploratory", "claim", "retrieval", "unknown")

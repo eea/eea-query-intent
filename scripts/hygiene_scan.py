@@ -39,7 +39,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_ROOT = ROOT / "data" / "hygiene"
-EXAM = ROOT / "data" / "acceptance" / "v1" / "test.jsonl"
+EXAM = ROOT / "data" / "acceptance" / "v2" / "test.jsonl"  # v2 is a superset of v1
 EN_CORPUS = ROOT / "data" / "training" / "v1" / "en.jsonl"
 V1 = ROOT / "data" / "training" / "v1"
 
@@ -99,21 +99,15 @@ def corpus_list() -> list[tuple[str, Path]]:
         p = V1 / f"{lang}.jsonl"
         if p.exists():
             corpa.append((f"v1/{lang}-mt", p))
-    cal = ROOT / "data" / "expanded_v3" / "calibration.jsonl"
+    cal = ROOT / "data" / "pilot" / "v1" / "calibration.jsonl"
     if cal.exists():
         corpa.append(("calibration", cal))
-    base = ROOT / "data" / "expanded_v3" / "train.jsonl"
-    if base.exists():
-        corpa.append(("expanded_v3-base", base))
-    bank_dir = ROOT / "data" / "pilot" / "noq-short"
+    mix = ROOT / "data" / "pilot" / "v1" / "train.jsonl"
+    if mix.exists():
+        corpa.append(("v1-mix", mix))
+    bank_dir = ROOT / "data" / "banks" / "v1-short"
     if bank_dir.exists():
         for p in sorted(bank_dir.glob("*.jsonl")):
-            if p.name.startswith("counter-") or p.name in (
-                "train.jsonl",
-                "calibration.jsonl",
-            ):
-                # intermediate artifacts of the previous iteration, not inputs
-                continue
             corpa.append((f"bank/{p.stem}", p))
     pools_dir = ROOT / "data" / "pilot" / "v1-pools"
     if pools_dir.exists():

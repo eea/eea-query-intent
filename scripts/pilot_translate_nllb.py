@@ -94,11 +94,10 @@ MAX_CHARS = 500
 # contamination sources (casefolded texts a translation must not match)
 DEDUP_FILES = [
     ROOT / "data" / "acceptance" / "v1" / "test.jsonl",
-    ROOT / "data" / "expanded_v3" / "train.jsonl",
-    ROOT / "data" / "expanded_v3" / "calibration.jsonl",
-    ROOT / "data" / "english_only" / "train.jsonl",
-    ROOT / "data" / "seed" / "train.jsonl",
-    ROOT / "data" / "multilingual" / "v1" / "train.jsonl",
+    ROOT / "data" / "acceptance" / "v2" / "test.jsonl",
+    ROOT / "data" / "pilot" / "v1" / "train.jsonl",
+    ROOT / "data" / "pilot" / "v1" / "calibration.jsonl",
+    ROOT / "data" / "pilot" / "v1" / "calibration_old.jsonl",
 ]
 
 
@@ -112,14 +111,9 @@ def load_corpus(path: Path) -> list[dict]:
 
 def _dedup_files() -> list[Path]:
     files = [p for p in DEDUP_FILES if p.exists()]
-    bank_dir = ROOT / "data" / "pilot" / "noq-short"
+    bank_dir = ROOT / "data" / "banks" / "v1-short"
     if bank_dir.exists():
         for p in sorted(bank_dir.glob("*.jsonl")):
-            if p.name.startswith("counter-") or p.name in (
-                "train.jsonl",
-                "calibration.jsonl",
-            ):
-                continue
             files.append(p)
     return files
 

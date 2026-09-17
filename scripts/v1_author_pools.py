@@ -24,7 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "pilot" / "v1-pools"
 EXAM = ROOT / "data" / "acceptance" / "v1" / "test.jsonl"
-BANK = ROOT / "data" / "pilot" / "noq-short" / "en.jsonl"
+BANK = ROOT / "data" / "banks" / "v1-short" / "en.jsonl"
 
 # ---------------------------------------------------------------- exam pool
 EXAM_Q = [

@@ -1,0 +1,229 @@
+{
+  "model_version": "setfit-v1",
+  "backbone": "intfloat/multilingual-e5-small",
+  "seed": 3,
+  "threshold": 0.95,
+  "eligible_labels": [
+    "question",
+    "exploratory",
+    "claim"
+  ],
+  "exam": {
+    "file": "data/acceptance/v2/test.jsonl",
+    "rows": 23718,
+    "sha256_16": "79fca1bb9edab755"
+  },
+  "training": {
+    "file": "data/pilot/v1/train.jsonl",
+    "rows": 81404,
+    "sha256_16": "1e0e75eb65749835"
+  },
+  "overall": {
+    "average_eligible_recall": 0.8593,
+    "worst_language_no_ai_false_positive": "mt",
+    "worst_language_no_ai_false_positive_rate": 0.005,
+    "average_abstention": 0.5463,
+    "gate": "worst-language no-AI false-positive rate <= 0.01 (ADR 0003 binary routing gate)",
+    "gate_met": true
+  },
+  "per_language": {
+    "bg": {
+      "eligible_recall": 0.8837,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5336,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "cs": {
+      "eligible_recall": 0.8993,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5254,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "da": {
+      "eligible_recall": 0.8859,
+      "no_ai_false_positive": 0.0025,
+      "abstention": 0.5313,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "de": {
+      "eligible_recall": 0.8523,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5502,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "el": {
+      "eligible_recall": 0.877,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5372,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "en": {
+      "eligible_recall": 0.7622,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5965,
+      "eligible_gold": 450,
+      "noai_gold": 400
+    },
+    "es": {
+      "eligible_recall": 0.8434,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5549,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "et": {
+      "eligible_recall": 0.8747,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5384,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "fi": {
+      "eligible_recall": 0.8434,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5549,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "fr": {
+      "eligible_recall": 0.9105,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5195,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "ga": {
+      "eligible_recall": 0.7584,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5998,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "hr": {
+      "eligible_recall": 0.8837,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5336,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "hu": {
+      "eligible_recall": 0.8993,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5254,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "is": {
+      "eligible_recall": 0.83,
+      "no_ai_false_positive": 0.0025,
+      "abstention": 0.5608,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "it": {
+      "eligible_recall": 0.906,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5218,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "lt": {
+      "eligible_recall": 0.8881,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5313,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "lv": {
+      "eligible_recall": 0.8946,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5284,
+      "eligible_gold": 446,
+      "noai_gold": 400
+    },
+    "mt": {
+      "eligible_recall": 0.8367,
+      "no_ai_false_positive": 0.005,
+      "abstention": 0.5561,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "nb": {
+      "eligible_recall": 0.8635,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5443,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "nl": {
+      "eligible_recall": 0.9083,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5207,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "nn": {
+      "eligible_recall": 0.7919,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5821,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "pl": {
+      "eligible_recall": 0.8367,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5584,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "pt": {
+      "eligible_recall": 0.8255,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5643,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "ro": {
+      "eligible_recall": 0.9016,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5242,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "sk": {
+      "eligible_recall": 0.8523,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5502,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "sl": {
+      "eligible_recall": 0.8501,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5514,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "sv": {
+      "eligible_recall": 0.8098,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5726,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    },
+    "tr": {
+      "eligible_recall": 0.8926,
+      "no_ai_false_positive": 0.0,
+      "abstention": 0.5289,
+      "eligible_gold": 447,
+      "noai_gold": 400
+    }
+  },
+  "notes": "Single canonical exam pass (raw predictions at threshold 0.0 in models/setfit/exam-v2-predictions.jsonl); gated view re-derived deterministically at 0.95, no re-inference. Five-class macro-F1 is diagnostic only.",
+  "date": "2026-09-17"
+}

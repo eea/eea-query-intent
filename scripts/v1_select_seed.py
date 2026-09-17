@@ -20,7 +20,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from choose_final_threshold import measure  # noqa: E402
 
-PREFIXES = {"d1": "setfit-v1", "binary": "setfit-v1b", "backbone": "setfit-v1e5"}
+PREFIXES = {
+    "d1": "setfit-v1",
+    "binary": "setfit-v1b",
+    "backbone": "setfit-v1e5",
+}
 CALIB = ROOT / "data" / "pilot" / "v1" / "calibration.jsonl"
 
 

@@ -11,6 +11,7 @@ Environment:
     EEA_QI_ABSTAIN_THRESHOLD overrides the manifest threshold
     EEA_QI_DEVICE            'cpu' (default), 'mps', or 'cuda'
     EEA_QI_MAX_WORDS         policy guard word limit (default: 20)
+    EEA_QI_HOST              bind address (default: 127.0.0.1; containers set 0.0.0.0)
 """
 
 from __future__ import annotations
@@ -208,7 +209,8 @@ def main() -> None:
     import uvicorn
 
     port = int(os.environ.get("EEA_QI_PORT", "8100"))
-    uvicorn.run(create_app(), host="127.0.0.1", port=port)
+    host = os.environ.get("EEA_QI_HOST", "127.0.0.1")
+    uvicorn.run(create_app(), host=host, port=port)
 
 
 if __name__ == "__main__":

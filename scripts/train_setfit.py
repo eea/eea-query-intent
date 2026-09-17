@@ -21,7 +21,7 @@ DEFAULT_MODEL_DIR = ROOT / "models" / "setfit"
 ELIGIBLE = ("question", "exploratory", "claim")
 LABELS = ("question", "exploratory", "claim", "retrieval", "unknown")
 BINARY_LABELS = ("eligible", "ineligible")
-BACKBONE = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+BACKBONE = "intfloat/multilingual-e5-small"  # production backbone (setfit-v1)
 
 
 def parse_args() -> argparse.Namespace:

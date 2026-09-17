@@ -20,12 +20,12 @@ exec >> "/tmp/v1_train_eval_${FAMILY}.log" 2>&1
 case "${FAMILY}" in
   d1)
     PREFIX="setfit-v1"
-    EXTRA=()
+    EXTRA=(--backbone sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)
     TRAIN_FILE="data/pilot/v1/train.jsonl"
     ;;
   binary)
     PREFIX="setfit-v1b"
-    EXTRA=(--binary)
+    EXTRA=(--binary --backbone sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)
     TRAIN_FILE="data/pilot/v1/train.jsonl"
     ;;
   backbone)

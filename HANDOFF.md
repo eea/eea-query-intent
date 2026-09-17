@@ -58,7 +58,8 @@ were derived, and backbone never trained. Fixed:
 
 ## What is running right now (background, caffeinate-guarded)
 
-1. `scripts/v1_family_chain.sh` (launched ~01:45) trains the three
+1. `scripts/v1_family_chain.sh` (restarted 02:25 after the incident; d1-s1
+   and binary-s1 are reused from the first run) trains the three
    candidate families sequentially on MPS, seeds 1/2/3 each:
    - `d1` → `models/setfit-v1-s{1,2,3}` (five-class, the D-1-class mix)
    - `binary` → `models/setfit-v1b-s{1,2,3}` (two-label eligible head)
@@ -78,6 +79,25 @@ were derived, and backbone never trained. Fixed:
    report, copies everything to `reports/v1_overnight/`, and touches
    `.pipeline/v1_overnight_done.flag` (or `v1_overnight_failed.flag`).
    Log: `/tmp/v1_post_chain.log`. **It deliberately stops there.**
+
+## Finding: the 1% calibration gate is unreachable (protocol fallback in effect)
+
+The d1 family finished (02:46, SELECTED=setfit-v1-s2, threshold 0.98 via
+FALLBACK). All seeds show calibration worst-language FP 5-7% at 0.98. A
+control run of PRODUCTION setfit-v4 on the original 1,330-row calibration
+also gives only 60% recall / 8.5% FP at 0.98 - the old calibration is a
+hard, off-distribution v3-era set for every model. Root cause: v4's 0.98
+was actually derived by sweep on the EXAM (see run_inhouse_build.sh line 51:
+sweep --gold data/acceptance/v1/test.jsonl; reports/final_sweep.txt shows
+exam numbers 0.010/0.851), not on the calibration. Consequence under the
+locked pre-registration (threshold from calibration only): no seed meets
+the gate -> fallback threshold 0.98, seeds ranked by calibration recall,
+exam runs once on the locked finalist, and the 1% gate is reported from
+that single exam run as the acceptance measurement. This is the protocol's
+explicit fallback path, not a protocol change. If the user wants the gate
+satisfiable, the fix is a version-bumped calibration redesign (the new
+2,678-row pool slice is actually easy: 0.4% FP; the old 1,330 slice is the
+hard part) - a morning decision, not an overnight intervention.
 
 ## What to do in the morning (in order)
 

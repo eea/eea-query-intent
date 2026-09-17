@@ -167,7 +167,30 @@ unchanged.
   next-iteration candidate. Production `models/setfit` + the launchd
   service remain untouched until the user decides.
 
-## What to do in the morning (in order)
+## What to do in the morning (in order) — COMPLETED 2026-09-17 ~09:00
+
+**Promotion EXECUTED per user decision (option 1: e5-s3 @ 0.95).**
+
+- `models/setfit` = setfit-v1 (e5-small seed 3, manifest model_version
+  `setfit-v1`, abstain_threshold 0.95); rollback at
+  `models/setfit-v4-rollback/` (setfit-v4).
+- Service casefolds the query before the model
+  (`classify_query`: `adapter.classify(query.casefold())`) - atomic pair
+  with the swap, matching the fully-casefolded v1 mix. Test updated.
+- launchd job removed + resubmitted (absolute path), /health verified:
+  model_version setfit-v1, abstain_threshold 0.95.
+- Probe battery: case invariance exact (Was ist ETS? == was ist ets?
+  0.941); mt 0.997, is 0.990, short es 0.980 eligible; keywords abstain
+  (0.046-0.069); Romania abstains (accepted scope); guards intact
+  (empty/url/too_long).
+- **Known blemish (accepted, matches the 0.762 English exam recall):**
+  flagship fact-lookups sit just under the bar and abstain: 'what is the
+  water framework directive?' 0.871, 'what is ets?' 0.894, 'Was ist
+  ETS?' 0.941 - fail-closed, no wrong summaries; next-iteration lever is
+  more short/fact-lookup English data or a backbone re-bake-off.
+- Committed 8b51ae8 (service + test). models/ is gitignored: the artifact
+  lives on disk; Hugging Face push is the pending deployment step
+  (clean name `setfit-v1` ready for it).
 
 1. Check `.pipeline/v1_overnight_done.flag`. Read
    `reports/v1_overnight/` (lock.json + canonical exam report) and

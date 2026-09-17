@@ -17,7 +17,7 @@
 
 model_version: setfit-v1
 backbone: intfloat/multilingual-e5-small
-backbone_revision: pinned-at-training-time  # verify the exact SHA in the HF cache before the HF push
+backbone_revision: 614241f622f53c4eeff9890bdc4f31cfecc418b3  # resolved from the local HF cache
 architecture: setfit-linear-head
 labels: [question, exploratory, claim, retrieval, unknown]
 eligible_labels: [question, exploratory, claim]

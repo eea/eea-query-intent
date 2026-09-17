@@ -31,9 +31,9 @@ V1 = ROOT / "data" / "training" / "v1"
 OUT = ROOT / "data" / "pilot" / "v1"
 EXAM_OUT = ROOT / "data" / "acceptance" / "v2"
 EXAM_V1 = ROOT / "data" / "acceptance" / "v1" / "test.jsonl"
-BASE_MIX = ROOT / "data" / "expanded_v3" / "train.jsonl"
-CALIB_OLD = ROOT / "data" / "expanded_v3" / "calibration.jsonl"
-BANK = ROOT / "data" / "pilot" / "noq-short"
+LEGACY_DIR = V1  # legacy_<lang>.jsonl: 413 v3-era rows per GPT-pending language
+CALIB_OLD = OUT / "calibration_old.jsonl"  # 1,330-row pre-v1 calibration
+BANK = ROOT / "data" / "banks" / "v1-short"  # stratum E short bank, 170 rows/language
 POOL = ROOT / "data" / "pilot" / "v1-pools"
 HYGIENE = ROOT / "data" / "hygiene"
 DROP_DECISIONS = HYGIENE / "2026-09-17" / "drop_decisions.jsonl"
@@ -233,10 +233,13 @@ def main() -> None:
 
     # ------------------------------------------------------------ stratum C2: legacy v3
     print("stratum C2: legacy v3 rows (retention-filtered)")
-    legacy = [r for r in load(BASE_MIX) if r.get("language") in LEGACY_LANGS]
-    base_path_ok = BASE_MIX.exists()
-    if base_path_ok:
-        manifest["inputs"]["C2/expanded_v3/train.jsonl"] = sha256_16(BASE_MIX)
+    legacy_paths = sorted(LEGACY_DIR.glob("legacy_*.jsonl"))
+    if len(legacy_paths) != len(LEGACY_LANGS):
+        raise SystemExit(f"expected {len(LEGACY_LANGS)} legacy files in {LEGACY_DIR}")
+    legacy: list[dict] = []
+    for p in legacy_paths:
+        manifest["inputs"][f"C2/{p.name}"] = sha256_16(p)
+        legacy.extend(load(p))
     kept_c2: list[dict] = []
     dropped_c2 = Counter()
     for r in legacy:

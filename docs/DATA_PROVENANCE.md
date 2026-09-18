@@ -35,15 +35,17 @@ Exams: v1 (21,280 rows, GPT-generated, frozen) and v2 (23,718 rows = v1 plus
 
 ## Required disclosures for publication
 
-1. **NLLB-200-1.3B is CC-BY-NC-4.0** — the model's training data contains
-   NLLB translations (strata C, D, E and the exam-v2/calibration short rows).
-   Non-commercial license: fine for the EEA (public body), must be declared
-   on the model card; restricts commercial redistribution of the weights.
+The model is published under the MIT license (user decision 2026-09-17).
+The following upstream data-source licenses are disclosed in the model card
+and still apply if the underlying training data is reused or redistributed:
+
+1. **NLLB-200-1.3B is CC-BY-NC-4.0** — the training data contains NLLB
+   translations (strata C, D, E and the exam-v2/calibration short rows).
 2. **opus-mt-en-mt (Maltese) is CC-BY-SA-4.0** — share-alike.
-3. **GPT-generated rows** (stratum B) — OpenAI's terms govern; declare.
-4. **Backbone** `intfloat/multilingual-e5-small` — verify its license
-   (intfloat models are typically CC-BY-NC or Apache-2.0 per repo; check the
-   HF repo's license field before publishing).
+3. **GPT-generated rows** (stratum B) — OpenAI's terms govern; declared in
+   the model card (user decision: included in the published dataset).
+4. **Backbone** `intfloat/multilingual-e5-small` — MIT (verified from the
+   cached repo metadata).
 5. SetFit library is Apache-2.0; this repo is Apache-2.0.
 
 ## Exam results (frozen exam v2, threshold 0.95)

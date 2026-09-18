@@ -5,7 +5,7 @@
 #
 # Build (pin the revision to an immutable commit SHA for release builds):
 #   docker build \
-#     --build-arg HF_MODEL_REPO=eea/query-intent-setfit-v1 \
+#     --build-arg HF_MODEL_REPO=eeahugs/query-intent-setfit-v1 \
 #     --build-arg HF_MODEL_REVISION=<commit-sha> \
 #     -t eea-query-intent:1.0.0 .
 #
@@ -33,7 +33,7 @@
 
 FROM python:3.12-slim
 
-ARG HF_MODEL_REPO=eea/query-intent-setfit-v1
+ARG HF_MODEL_REPO=eeahugs/query-intent-setfit-v1
 # MUST be pinned to an immutable commit SHA for release builds; 'main' is
 # only acceptable for throwaway test builds.
 ARG HF_MODEL_REVISION=main

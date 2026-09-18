@@ -55,6 +55,7 @@ COPY src/ src/
 RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='${HF_MODEL_REPO}', revision='${HF_MODEL_REVISION}', local_dir='/app/models/setfit')"
 
 ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src \
     EEA_QI_DEVICE=cpu \
     EEA_QI_HOST=0.0.0.0 \
     HF_HUB_OFFLINE=1

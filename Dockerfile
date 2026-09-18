@@ -5,9 +5,7 @@
 #
 # Build (pin the revision to an immutable commit SHA for release builds):
 #   docker build \
-#     --build-arg HF_MODEL_REPO=eeahugs/query-intent-setfit-v1 \
-#     --build-arg HF_MODEL_REVISION=<commit-sha> \
-#     -t eea-query-intent:1.0.0 .
+#     -t eea-query-intent:1.0.0 .   # repo + revision already pinned below
 #
 # If the model repo is private, pass the token as a BuildKit secret instead
 # of an ARG (never persist credentials in image metadata):
@@ -34,9 +32,9 @@
 FROM python:3.12-slim
 
 ARG HF_MODEL_REPO=eeahugs/query-intent-setfit-v1
-# MUST be pinned to an immutable commit SHA for release builds; 'main' is
-# only acceptable for throwaway test builds.
-ARG HF_MODEL_REVISION=main
+# Pinned to the immutable push commit of eeahugs/query-intent-setfit-v1
+# (2026-09-18). Change only for a deliberately new model version.
+ARG HF_MODEL_REVISION=ba111788b58e4f1e0dafb3e74189f0a08d1e3186
 
 # CPU-only torch first, so pip never pulls the CUDA-bundled wheel (~2.5 GB).
 RUN pip install --no-cache-dir torch==2.14.0 \

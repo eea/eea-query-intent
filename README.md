@@ -63,18 +63,27 @@ Never edit `run_service.sh` while the service is running.
 
 ### Deploying (Rancher)
 
-1. Push the model to Hugging Face — see `docs/DATA_PROVENANCE.md` first
-   (NLLB is CC-BY-NC: this must be declared on the model card). The repo must
-   contain the SetFit weights, tokenizer, `manifest.json`, and a README model
-   card. Do **not** push the `*-predictions.jsonl` files (they contain exam
-   answers).
-2. Build the image pinned to the pushed commit:
-   `docker build --build-arg HF_MODEL_REPO=<org>/query-intent-setfit-v1 --build-arg HF_MODEL_REVISION=<commit-sha> -t eea-query-intent:1.0.0 .`
-3. Run with `-p 8100:8100`; health/startup probe on `GET /health`
-   (allow ~30 s initial delay; cold start loads ~450 MB of weights).
+1. Model and dataset are published: `eeahugs/query-intent-setfit-v1`
+   (model, MIT) and `eeahugs/query-intent-setfit-v1-train` (training data,
+   CC-BY-NC-4.0 — NLLB/opus-mt provenance disclosed in the model card).
+2. Build the image (repo + revision already pinned in the Dockerfile to push
+   commit `ba111788`):
+   `docker build -t eea-query-intent:1.0.0 .`
+   Build on the x86-64 target (the local Mac build is arm64 — do not push an
+   arm64 image to x86 pods). Override `HF_MODEL_REPO`/`HF_MODEL_REVISION`
+   only for a deliberately new model version.
+3. Pod sizing: **2 vCPU / 2 GiB** (measured container RSS ~765 MB; the 1 GiB
+   tier is too tight). Probes on `GET /health`: startup ~30 s initial delay,
+   10 s period, ~12 failures allowed; same path as readiness (cold start
+   loads ~450 MB of weights, healthy in < 60 s).
 4. Point the Volto app's `QUERY_INTENT_SERVICE_URL` at the service origin
-   (no path — the `/_qi` middleware appends `/v1/classify`). No frontend
-   changes needed; the classifier contract is unchanged.
+   (no path — the `/_qi` middleware appends `/v1/classify`). Optional:
+   `QUERY_INTENT_TIMEOUT_MS` (default 2000). No frontend changes needed;
+   the classifier contract is unchanged. Until the URL is set, AI summaries
+   fail closed (search works, no summary).
+5. After deployment: run a quick pod latency benchmark (spec: p95 <= 150 ms
+   at concurrency 1) — the local M1 numbers (p50 37 ms / p95 76 ms) do not
+   transfer to small x86 vCPUs.
 
 ## Training methodology (scripts/)
 

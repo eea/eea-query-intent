@@ -74,6 +74,7 @@ pipeline {
         script {
           try {
             sh '''rm -rf xunit-reports-current && mkdir -p xunit-reports-current/coverage'''
+            sh script: '''docker rm -f ${IMAGE_NAME}-unit''', returnStatus: true
             def status = sh(script: '''docker run --name="${IMAGE_NAME}-unit" $TEST_IMAGE uv run pytest --junitxml=junit.xml --cov=. --cov-report=lcov:coverage/lcov.info --cov-report=html:coverage/lcov-report --cov-report=xml:coverage/cobertura-coverage.xml''', returnStatus: true)
             sh '''docker cp ${IMAGE_NAME}-unit:/app/junit.xml xunit-reports-current/junit.xml'''
             sh '''docker cp ${IMAGE_NAME}-unit:/app/coverage/. xunit-reports-current/coverage'''
@@ -90,9 +91,11 @@ pipeline {
               error "unit tests failed"
             }
           } finally {
-            catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-              junit testResults: 'xunit-reports-current/junit.xml', allowEmptyResults: true
-            }
+            // Plain junit step (no allowEmptyResults): the non-optional
+            // docker cp above already guarantees a report exists; a missing
+            // or malformed one must fail the stage, not be suppressed.
+            junit testResults: 'xunit-reports-current/junit.xml'
+            sh script: '''docker stop ${IMAGE_NAME}-unit''', returnStatus: true
             sh script: '''docker rm -v ${IMAGE_NAME}-unit''', returnStatus: true
           }
         }
@@ -110,6 +113,7 @@ pipeline {
         script {
           try {
             sh '''rm -rf integration-reports-current && mkdir -p integration-reports-current'''
+            sh script: '''docker rm -f ${IMAGE_NAME}-app''', returnStatus: true
             sh '''docker run -d --name="${IMAGE_NAME}-app" $RELEASE_IMAGE'''
             // ci_smoke.py waits for the model cold-start, then probes the
             // live service: health, one eligible query, one keyword query,
@@ -118,10 +122,11 @@ pipeline {
               docker cp scripts/ci_smoke.py ${IMAGE_NAME}-app:/tmp/ci_smoke.py
               docker exec ${IMAGE_NAME}-app python /tmp/ci_smoke.py
             ''', returnStatus: true)
-            sh script: '''docker cp ${IMAGE_NAME}-app:/tmp/junit-smoke.xml integration-reports-current/junit.xml''', returnStatus: true
-            catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-              junit testResults: 'integration-reports-current/junit.xml', allowEmptyResults: true
-            }
+            // ci_smoke.py always writes /tmp/junit-smoke.xml (including a
+            // failed service_start testcase on cold-start timeout), so a
+            // plain docker cp here fails the stage when the container died.
+            sh '''docker cp ${IMAGE_NAME}-app:/tmp/junit-smoke.xml integration-reports-current/junit.xml'''
+            junit testResults: 'integration-reports-current/junit.xml'
             if (status != 0) {
               error "integration smoke failed"
             }
@@ -135,22 +140,24 @@ pipeline {
 
     // Branches only (house pattern, like eea.genai.core): PR builds are not
     // analyzed, so no PR decoration is required on the SonarQube project.
+    // (env.CHANGE_ID ?: '') also covers agents where the variable is absent
+    // (null) rather than empty on non-PR builds.
     stage('Sonarqube test') {
       when {
-        allOf {
-          environment name: 'CHANGE_ID', value: ''
-        }
+        expression { (env.CHANGE_ID ?: '') == '' }
       }
       steps {
         script {
           def scannerHome = tool 'SonarQubeScanner'
-          env.sonarParams = " -Dsonar.branch.name=${env.BRANCH_NAME}"
+          // Whole -D list precomputed here (house pattern) so the sh line
+          // carries only explicit env.* interpolations.
+          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME}"
           withSonarQubeEnv('Sonarqube') {
             // Python coverage goes to sonar.python.coverage.reportPaths as
             // Cobertura XML (never the JS LCOV property). sonar.sources is
             // the repo root so the fully-qualified coverage paths
             // (src/eea_query_intent/...) resolve to real files.
-            sh "export PATH=${scannerHome}/bin:\$PATH; sonar-scanner -Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=$GIT_NAME -Dsonar.projectName=$GIT_NAME -Dsonar.projectVersion=${env.BASE_VERSION} ${env.sonarParams}"
+            sh "export PATH=${scannerHome}/bin:\$PATH; sonar-scanner ${env.sonarParams}"
           }
         }
       }
@@ -159,12 +166,15 @@ pipeline {
     stage('Trivy test') {
       steps {
         // Full HIGH,CRITICAL report archived for visibility; only CRITICAL
-        // fails the build (EEA policy — base-OS HIGHs are out of our control).
+        // fails the build (EEA policy — base-OS HIGHs are out of our
+        // control). The report scan redirects to a file (then cats it) so
+        // the scanner's own exit status is not masked by a pipe.
         sh '''
           mkdir -p trivy-reports
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             "$TRIVY_IMAGE" image --no-progress --format table --severity HIGH,CRITICAL \
-            "$RELEASE_IMAGE" | tee trivy-reports/trivy-image.txt
+            "$RELEASE_IMAGE" > trivy-reports/trivy-image.txt
+          cat trivy-reports/trivy-image.txt
         '''
         archiveArtifacts artifacts: 'trivy-reports/*.txt', fingerprint: true, allowEmptyArchive: false
         sh '''
@@ -178,7 +188,9 @@ pipeline {
     stage('Release on Docker Hub') {
       when {
         allOf {
-          environment name: 'CHANGE_ID', value: ''
+          // (env.CHANGE_ID ?: '') also covers agents where the variable is
+          // absent (null) rather than empty on non-PR builds.
+          expression { (env.CHANGE_ID ?: '') == '' }
           anyOf {
             expression { env.BRANCH_NAME == env.DEFAULT_BRANCH }
             buildingTag()
@@ -188,6 +200,7 @@ pipeline {
       steps {
         withCredentials([usernamePassword(credentialsId: 'jekinsdockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
           sh '''
+            trap 'docker logout >/dev/null 2>&1 || true' EXIT
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             # A version-numbered tag is pushed only for a real git tag.
             if [ -n "${TAG_NAME:-}" ]; then

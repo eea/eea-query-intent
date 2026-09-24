@@ -9,7 +9,7 @@
 # runs against the source already inside this image.
 #
 # The model is NOT in this image (tests use a fake adapter) and data/ is
-# excluded via Dockerfile.testignore.
+# excluded via the shared .dockerignore.
 FROM python:3.12-slim
 
 WORKDIR /app

@@ -72,9 +72,9 @@ def post_classify(query: str) -> tuple[int, dict]:
         return error.code, body
 
 
-def get(path: str) -> tuple[int, dict]:
+def get(path: str, timeout: int = 30) -> tuple[int, dict]:
     try:
-        with urllib.request.urlopen(f"{BASE}{path}", timeout=30) as response:
+        with urllib.request.urlopen(f"{BASE}{path}", timeout=timeout) as response:
             return response.status, json.loads(response.read().decode())
     except urllib.error.HTTPError as error:
         try:
@@ -82,6 +82,37 @@ def get(path: str) -> tuple[int, dict]:
         except json.JSONDecodeError:
             body = {"raw": str(error)}
         return error.code, body
+
+
+class CollectingResult(unittest.TestResult):
+    """TestResult that records an outcome for EVERY test, so the JUnit XML
+    lists one <testcase> per test (the Jenkins junit step shows the full run
+    instead of only the failures)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.records: list[tuple[unittest.TestCase, str, str]] = []
+
+    def _record(self, test: unittest.TestCase, kind: str, detail: str = "") -> None:
+        self.records.append((test, kind, detail))
+
+    def addSuccess(self, test: unittest.TestCase) -> None:
+        super().addSuccess(test)
+        self._record(test, "passed")
+
+    def addFailure(self, test: unittest.TestCase, err: tuple) -> None:
+        super().addFailure(test, err)
+        detail = "\n".join(str(part) for part in err).splitlines()[-1][:500]
+        self._record(test, "failed", detail)
+
+    def addError(self, test: unittest.TestCase, err: tuple) -> None:
+        super().addError(test, err)
+        detail = "\n".join(str(part) for part in err).splitlines()[-1][:500]
+        self._record(test, "error", detail)
+
+    def addSkip(self, test: unittest.TestCase, reason: str) -> None:
+        super().addSkip(test, reason)
+        self._record(test, "skipped", reason)
 
 
 class SmokeTests(unittest.TestCase):
@@ -128,41 +159,76 @@ class SmokeTests(unittest.TestCase):
         self.assertEqual(status, 404)
 
 
-def main() -> int:
-    # Wait for the service: the model cold-starts on first boot.
-    for _ in range(90):
-        try:
-            status, _ = get("/health")
-            if status == 200:
-                break
-        except (urllib.error.URLError, ConnectionError):
-            pass
-        time.sleep(2)
-    else:
-        print("service did not become healthy within 180s", file=sys.stderr)
-        return 1
-
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(SmokeTests)
-    result = unittest.TextTestRunner(verbosity=2).run(suite)
-
-    # Minimal JUnit XML for the Jenkins junit step.
+def write_junit(records: list[tuple[str, str, str]]) -> None:
+    """Write one <testcase> per test (records: name, kind, detail)."""
+    failures = sum(1 for _, kind, _ in records if kind == "failed")
+    errors = sum(1 for _, kind, _ in records if kind == "error")
+    skipped = sum(1 for _, kind, _ in records if kind == "skipped")
     testsuite = ET.Element(
         "testsuite",
         {
             "name": "integration-smoke",
-            "tests": str(result.testsRun),
-            "failures": str(len(result.failures)),
-            "errors": str(len(result.errors)),
-            "skipped": "0",
+            "tests": str(len(records)),
+            "failures": str(failures),
+            "errors": str(errors),
+            "skipped": str(skipped),
             "time": "0",
         },
     )
-    for test, _ in result.failures + result.errors:
-        testcase = ET.SubElement(testsuite, "testcase", {"name": str(test)})
-        ET.SubElement(testcase, "failure")
+    for name, kind, detail in records:
+        testcase = ET.SubElement(
+            testsuite, "testcase", {"name": name, "classname": "integration-smoke"}
+        )
+        if kind == "failed":
+            ET.SubElement(
+                testcase, "failure", {"message": detail or "assertion failed"}
+            )
+        elif kind == "error":
+            ET.SubElement(testcase, "error", {"message": detail or "unexpected error"})
+        elif kind == "skipped":
+            ET.SubElement(testcase, "skipped", {"message": detail})
     JUNIT_PATH.write_text(ET.tostring(testsuite, encoding="unicode"))
     print(f"junit written to {JUNIT_PATH}")
-    return 0 if result.wasSuccessful() else 1
+
+
+def main() -> int:
+    # Wait for the service: the model cold-starts on first boot. Bounded by
+    # a real wall-clock deadline with short per-attempt timeouts, so a hung
+    # endpoint cannot stretch the stage for tens of minutes.
+    deadline = time.monotonic() + 240
+    healthy = False
+    while time.monotonic() < deadline:
+        try:
+            status, _ = get("/health", timeout=3)
+            if status == 200:
+                healthy = True
+                break
+        except (
+            urllib.error.URLError,
+            ConnectionError,
+            TimeoutError,
+            OSError,
+            ValueError,
+        ):
+            pass
+        time.sleep(2)
+    if not healthy:
+        write_junit(
+            [("service_start", "error", "service did not become healthy within 240s")]
+        )
+        return 1
+
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(SmokeTests)
+    result = CollectingResult()
+    suite(result)
+
+    records = [(str(test), kind, detail) for test, kind, detail in result.records]
+    write_junit(records)
+    ok = result.wasSuccessful() and all(kind == "passed" for _, kind, _ in records)
+    for name, kind, detail in records:
+        if kind != "passed":
+            print(f"{kind}: {name}: {detail[:200]}", file=sys.stderr)
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

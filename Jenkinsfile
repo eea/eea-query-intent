@@ -78,6 +78,14 @@ pipeline {
             def status = sh(script: '''docker run --name="${IMAGE_NAME}-unit" $TEST_IMAGE uv run pytest --junitxml=junit.xml --cov=. --cov-report=lcov:coverage/lcov.info --cov-report=html:coverage/lcov-report --cov-report=xml:coverage/cobertura-coverage.xml''', returnStatus: true)
             sh '''docker cp ${IMAGE_NAME}-unit:/app/junit.xml xunit-reports-current/junit.xml'''
             sh '''docker cp ${IMAGE_NAME}-unit:/app/coverage/. xunit-reports-current/coverage'''
+            // The Cobertura <sources> element carries the container CWD
+            // (/app) as an absolute path; the SonarQube python sensor cannot
+            // resolve it from the agent workspace ("Invalid directory path in
+            // 'source' element" -> 0% coverage on older sensor versions). The
+            // class filenames are already relative to the repo root, matching
+            // sonar.sources=., so drop the element and let the sensor resolve
+            // them against the project base directory.
+            sh '''sed -i '/<sources>/,/<\\/sources>/d' xunit-reports-current/coverage/cobertura-coverage.xml'''
             publishHTML(target : [
               allowMissing: false,
               alwaysLinkToLastBuild: true,

@@ -8,8 +8,10 @@ docker run --rm eea-query-intent-test:preflight sh -c '
     --cov-report=lcov:coverage/lcov.info \
     --cov-report=html:coverage/lcov-report \
     --cov-report=xml:coverage/cobertura-coverage.xml 2>&1 | tail -12
-  echo "=== junit.xml (first 15 lines):"
-  head -15 junit.xml
+  # Same strip the Jenkins Unit stage applies before sonar-scanner runs:
+  sed -i "/<sources>/,/<\\/sources>/d" coverage/cobertura-coverage.xml
+  echo "=== cobertura <sources> element (must be gone):"
+  grep -c "<sources>" coverage/cobertura-coverage.xml || echo "0 (stripped)"
   echo "=== junit testcase count:"
   grep -c "<testcase" junit.xml || true
   echo "=== lcov SF lines:"

@@ -27,7 +27,29 @@ JUNIT_PATH = Path("/tmp/junit-smoke.xml")
 ELIGIBLE_PROBE = "why are co2 emissions increasing in europe?"
 KEYWORD_PROBE = "plastic waste"
 TOO_LONG_QUERY = " ".join(
-    ["what", "are", "the", "current", "co2", "emission", "figures", "for", "each", "member", "state", "under", "the", "emission", "trading", "scheme", "including", "corrections", "and", "adjustments", "please"]
+    [
+        "what",
+        "are",
+        "the",
+        "current",
+        "co2",
+        "emission",
+        "figures",
+        "for",
+        "each",
+        "member",
+        "state",
+        "under",
+        "the",
+        "emission",
+        "trading",
+        "scheme",
+        "including",
+        "corrections",
+        "and",
+        "adjustments",
+        "please",
+    ]
 )
 URL_QUERY = "https://example.com/page"
 
@@ -137,7 +159,7 @@ def main() -> int:
     )
     for test, _ in result.failures + result.errors:
         testcase = ET.SubElement(testsuite, "testcase", {"name": str(test)})
-        ET.SubElement(testcase, "failure" if test.id() in [str(t) for t, _ in result.failures] else "error")
+        ET.SubElement(testcase, "failure")
     JUNIT_PATH.write_text(ET.tostring(testsuite, encoding="unicode"))
     print(f"junit written to {JUNIT_PATH}")
     return 0 if result.wasSuccessful() else 1

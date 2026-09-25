@@ -14,9 +14,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Pin the same uv series as pyproject's build_system requires (uv-build
-# >=0.11,<0.12) so the project builds without version warnings.
-RUN pip install --no-cache-dir 'uv>=0.11,<0.12'
+# Pin the exact uv version the pipeline was verified with (a range would
+# re-resolve on every build, S8544); --only-binary :all: refuses sdist
+# builds (no setup-script execution, S8541).
+RUN pip install --no-cache-dir --only-binary :all: 'uv==0.11.33'
 
 # Full repo first: uv sync also installs the project itself (editable,
 # src layout), which needs the source present. Dependency wheels are
@@ -25,4 +26,7 @@ RUN pip install --no-cache-dir 'uv>=0.11,<0.12'
 COPY . .
 # --all-groups: the project declares its runtime deps in named groups
 # (dev, ml, service) and plain `uv sync` only installs the dev group.
-RUN uv sync --frozen --all-groups
+# S8541 waived (--no-build would break this line): the only build is this
+# repo's own pinned package via uv_build, resolved from the committed
+# uv.lock; no third-party sdist is built.
+RUN uv sync --frozen --all-groups  # NOSONAR

@@ -37,22 +37,29 @@ ARG HF_MODEL_REPO=eeahugs/query-intent-setfit-v1
 ARG HF_MODEL_REVISION=ba111788b58e4f1e0dafb3e74189f0a08d1e3186
 
 # CPU-only torch first, so pip never pulls the CUDA-bundled wheel (~2.5 GB).
-RUN pip install --no-cache-dir torch==2.14.0 \
+# --only-binary :all: refuses sdist builds (no setup-script execution).
+RUN pip install --no-cache-dir --only-binary :all: torch==2.14.0 \
     --index-url https://download.pytorch.org/whl/cpu
 
-RUN pip install --no-cache-dir \
+# Split from the torch layer on purpose (S7031 waived): torch is a big
+# rarely-changing layer; keeping the small deps separate preserves its
+# cache. --only-binary :all: refuses sdist builds (no setup-script
+# execution); packages sorted alphanumerically per S7018.
+RUN pip install --no-cache-dir --only-binary :all: \
     fastapi==0.141.1 \
-    uvicorn==0.52.4 \
-    setfit==1.2.0 \
     huggingface_hub==1.30.0 \
-    numpy==1.26.4
+    numpy==1.26.4 \
+    setfit==1.2.0 \
+    uvicorn==0.52.4
 
 WORKDIR /app
 COPY src/ src/
 
 # Bake the pinned model snapshot (weights + tokenizer + manifest.json) into
 # the image. Runtime stays offline (HF_HUB_OFFLINE=1 below).
-RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='${HF_MODEL_REPO}', revision='${HF_MODEL_REVISION}', local_dir='/app/models/setfit')"
+RUN python -c 'from huggingface_hub import snapshot_download; \
+    snapshot_download(repo_id="${HF_MODEL_REPO}", \
+    revision="${HF_MODEL_REVISION}", local_dir="/app/models/setfit")'
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \

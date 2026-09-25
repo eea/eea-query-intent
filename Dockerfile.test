@@ -1,0 +1,32 @@
+# Test image for the Jenkins pipeline (jenkins-pipeline skill Phase 2).
+# Mirrors the release runtime (python:3.12-slim + uv) but installs every
+# dependency group (dev, ml, service) from uv.lock so lint and unit tests
+# run exactly as developers run them locally via `uv run`.
+#
+# The full repository is baked in (COPY . .) because EEA Jenkins agents run
+# Docker-outside-of-Docker: bind-mounting $WORKSPACE into a spawned
+# container would silently mount an empty directory, so every stage command
+# runs against the source already inside this image.
+#
+# The model is NOT in this image (tests use a fake adapter) and data/ is
+# excluded via the shared .dockerignore.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Pin the exact uv version the pipeline was verified with (a range would
+# re-resolve on every build, S8544); --only-binary :all: refuses sdist
+# builds (no setup-script execution, S8541).
+RUN pip install --no-cache-dir --only-binary :all: 'uv==0.11.33'
+
+# Full repo first: uv sync also installs the project itself (editable,
+# src layout), which needs the source present. Dependency wheels are
+# cached in the uv cache layer and re-resolve from uv.lock, so rebuilds
+# after source-only changes stay fast.
+COPY . .
+# --all-groups: the project declares its runtime deps in named groups
+# (dev, ml, service) and plain `uv sync` only installs the dev group.
+# S8541 waived (--no-build would break this line): the only build is this
+# repo's own pinned package via uv_build, resolved from the committed
+# uv.lock; no third-party sdist is built.
+RUN uv sync --frozen --all-groups  # NOSONAR

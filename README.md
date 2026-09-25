@@ -1,5 +1,9 @@
 # EEA Query Intent
 
+[![Quality Gate](https://sonarqube.eea.europa.eu/api/project_badges/quality_gate?project=eea-query-intent)](https://sonarqube.eea.europa.eu/dashboard?id=eea-query-intent)
+
+[![Pipeline](https://ci.eionet.europa.eu/buildStatus/icon?job=EEA-AI%2Feea-query-intent%2Fmaster&subject=master)](https://ci.eionet.europa.eu/view/Github/job/EEA-AI/job/eea-query-intent/job/master/display/redirect)
+
 A small multilingual NLP service that decides whether a website search query
 is **AI-eligible** (a natural-language question, an exploratory request, or a
 factual claim) or **no-AI** (keyword/document retrieval, or anything

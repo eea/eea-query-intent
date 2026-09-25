@@ -266,7 +266,7 @@ def evaluate_predictions(
     gold_language = {record.id: record.language for record in gold}
 
     languages: dict[str, Any] = {}
-    for language in sorted({language for language in gold_language.values()}):
+    for language in sorted(set(gold_language.values())):
         languages[language] = _evaluate_language(
             [record for record in gold if record.language == language],
             [

@@ -112,7 +112,7 @@ def main() -> None:
             for line in out.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-    per_intent = {intent: 0 for intent in TRAIN_QUOTAS}
+    per_intent = dict.fromkeys(TRAIN_QUOTAS, 0)
     for rec in records:
         per_intent[rec["intent"]] += 1
     avoid = existing_texts()

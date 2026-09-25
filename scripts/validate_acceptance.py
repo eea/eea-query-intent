@@ -140,7 +140,7 @@ def main() -> None:
             for line in shard.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-        counts = {intent: 0 for intent in INTENTS}
+        counts = dict.fromkeys(INTENTS, 0)
         seen_texts: set[str] = set()
         for row in rows:
             text = row["text"]

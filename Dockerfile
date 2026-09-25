@@ -56,10 +56,12 @@ WORKDIR /app
 COPY src/ src/
 
 # Bake the pinned model snapshot (weights + tokenizer + manifest.json) into
-# the image. Runtime stays offline (HF_HUB_OFFLINE=1 below).
-RUN python -c 'from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id="${HF_MODEL_REPO}", \
-    revision="${HF_MODEL_REVISION}", local_dir="/app/models/setfit")'
+# the image. Runtime stays offline (HF_HUB_OFFLINE=1 below). The whole
+# -c program is one double-quoted shell string (Dockerfile-level
+# continuations) so the ARG values are expanded by the shell.
+RUN python -c "from huggingface_hub import snapshot_download; \
+    snapshot_download(repo_id='${HF_MODEL_REPO}', \
+    revision='${HF_MODEL_REVISION}', local_dir='/app/models/setfit')"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \

@@ -159,12 +159,15 @@ pipeline {
           def scannerHome = tool 'SonarQubeScanner'
           // Whole -D list precomputed here (house pattern) so the sh line
           // carries only explicit env.* interpolations.
-          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME}"
+          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME} '-Dsonar.coverage.exclusions=scripts/**' '-Dsonar.exclusions=scripts/translations/**'"
           withSonarQubeEnv('Sonarqube') {
             // Python coverage goes to sonar.python.coverage.reportPaths as
             // Cobertura XML (never the JS LCOV property). sonar.sources is
             // the repo root so the fully-qualified coverage paths
             // (src/eea_query_intent/...) resolve to real files.
+            // scripts/** is out of the coverage denominator (CI scripts
+            // never run under the unit tests), and scripts/translations
+            // (legacy v3 data modules) is excluded from analysis entirely.
             sh "export PATH=${scannerHome}/bin:\$PATH; sonar-scanner ${env.sonarParams}"
           }
         }

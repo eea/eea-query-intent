@@ -130,10 +130,10 @@ pipeline {
               docker cp scripts/ci_smoke.py ${IMAGE_NAME}-app:/tmp/ci_smoke.py
               docker exec ${IMAGE_NAME}-app python /tmp/ci_smoke.py
             ''', returnStatus: true)
-            // ci_smoke.py always writes /tmp/junit-smoke.xml (including a
+            // ci_smoke.py always writes /app/junit-smoke.xml (including a
             // failed service_start testcase on cold-start timeout), so a
             // plain docker cp here fails the stage when the container died.
-            sh '''docker cp ${IMAGE_NAME}-app:/tmp/junit-smoke.xml integration-reports-current/junit.xml'''
+            sh '''docker cp ${IMAGE_NAME}-app:/app/junit-smoke.xml integration-reports-current/junit.xml'''
             junit testResults: 'integration-reports-current/junit.xml'
             if (status != 0) {
               error "integration smoke failed"

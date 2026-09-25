@@ -178,8 +178,8 @@ def create_app() -> FastAPI:
             "uptime_seconds": round(time.time() - started, 1),
         }
 
-    @app.post("/v1/classify")
-    def classify(request: ClassifyRequest) -> dict:
+    @app.post("/v1/classify", response_model=None)
+    def classify(request: ClassifyRequest) -> dict | JSONResponse:
         started_at = time.perf_counter()
         try:
             result = classify_query(

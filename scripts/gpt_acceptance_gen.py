@@ -378,7 +378,7 @@ def main() -> None:
             for line in out.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-    per_intent = {intent: 0 for intent in QUOTAS}
+    per_intent = dict.fromkeys(QUOTAS, 0)
     for rec in records:
         per_intent[rec["intent"]] += 1
     avoid = {rec["text"].casefold() for rec in records}

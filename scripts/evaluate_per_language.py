@@ -122,7 +122,9 @@ def main() -> int:
     )
 
     if args.report:
-        out = Path(args.report)
+        # Local analyst CLI: the operator supplies the output path; there is
+        # no untrusted input channel here (no server, no remote data).
+        out = Path(args.report)  # NOSONAR
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(
             json.dumps(

@@ -22,7 +22,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 BASE = "http://127.0.0.1:8100"
-JUNIT_PATH = Path("/tmp/junit-smoke.xml")
+# Written into the container workdir (root-owned, not world-writable like
+# /tmp): Jenkins docker-cps the file back out of /app/junit-smoke.xml.
+JUNIT_PATH = Path("/app/junit-smoke.xml")
 
 ELIGIBLE_PROBE = "why are co2 emissions increasing in europe?"
 KEYWORD_PROBE = "plastic waste"

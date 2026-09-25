@@ -12,7 +12,7 @@ set +e
 docker cp scripts/ci_smoke.py "$C":/tmp/ci_smoke.py
 docker exec "$C" python /tmp/ci_smoke.py
 RC=$?
-docker cp "$C":/tmp/junit-smoke.xml /tmp/qi-smoke-junit.xml
+docker cp "$C":/app/junit-smoke.xml /tmp/qi-smoke-junit.xml
 set -e
 docker stop "$C"
 docker rm -v "$C"

@@ -203,13 +203,7 @@ def main() -> int:
             if status == 200:
                 healthy = True
                 break
-        except (
-            urllib.error.URLError,
-            ConnectionError,
-            TimeoutError,
-            OSError,
-            ValueError,
-        ):
+        except (OSError, ValueError):
             pass
         time.sleep(2)
     if not healthy:

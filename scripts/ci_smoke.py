@@ -102,12 +102,12 @@ class CollectingResult(unittest.TestResult):
 
     def addFailure(self, test: unittest.TestCase, err: tuple) -> None:
         super().addFailure(test, err)
-        detail = "\n".join(str(part) for part in err).splitlines()[-1][:500]
+        detail = (str(err[1]).strip() or err[0].__name__)[:500]
         self._record(test, "failed", detail)
 
     def addError(self, test: unittest.TestCase, err: tuple) -> None:
         super().addError(test, err)
-        detail = "\n".join(str(part) for part in err).splitlines()[-1][:500]
+        detail = (str(err[1]).strip() or err[0].__name__)[:500]
         self._record(test, "error", detail)
 
     def addSkip(self, test: unittest.TestCase, reason: str) -> None:

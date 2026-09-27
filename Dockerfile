@@ -36,30 +36,15 @@ ARG HF_MODEL_REPO=eeahugs/query-intent-setfit-v1
 # (2026-09-18). Change only for a deliberately new model version.
 ARG HF_MODEL_REVISION=ba111788b58e4f1e0dafb3e74189f0a08d1e3186
 
-# CPU-only torch first, so pip never pulls the CUDA-bundled wheel
-# (~2.5 GB). --only-binary=:all: refuses sdist builds (no setup-script
-# execution, S8541). Every package - torch plus all of its transitive
-# deps - is pinned to the exact version the CI build resolved (S8544,
-# locked versions); pip still verifies the full graph, so a stale pin
-# fails the build loudly.
-RUN pip install --no-cache-dir --only-binary=:all: \
-    torch==2.14.0+cpu \
-    filelock==3.32.3 \
-    fsspec==2026.6.0 \
-    jinja2==3.1.6 \
-    markupsafe==3.0.3 \
-    mpmath==1.3.0 \
-    networkx==3.6.1 \
-    setuptools==78.1.0 \
-    sympy==1.14.0 \
-    typing-extensions==4.16.0 \
-    --index-url https://download.pytorch.org/whl/cpu
-
-# Split from the torch layer on purpose (S7031 waived): torch is a big
-# rarely-changing layer; keeping the small deps separate preserves its
-# cache. All 62 packages - the five direct deps plus every transitive -
-# are pinned exactly (S8544); --only-binary=:all: (S8541). The fsspec
-# pin matches layer 1 so the build never downgrades mid-image.
+# Single install layer (S7031): PyPI is the primary index and the PyTorch
+# CPU mirror is an extra index. The torch pin carries the +cpu local
+# version tag, so it can only resolve from the CPU mirror - pip never
+# pulls the CUDA-bundled wheel (~2.5 GB). All 71 packages - the six
+# direct deps plus every transitive - are pinned to the exact versions
+# the CI build resolved (S8544, locked versions); pip still verifies the
+# full graph, so a stale pin fails the build loudly.
+# --only-binary=:all: refuses sdist builds (no setup-script execution,
+# S8541).
 RUN pip install --no-cache-dir --only-binary=:all: \
     accelerate==1.15.0 \
     aiohappyeyeballs==2.7.1 \
@@ -77,6 +62,7 @@ RUN pip install --no-cache-dir --only-binary=:all: \
     dill==0.4.1 \
     evaluate==0.4.6 \
     fastapi==0.141.1 \
+    filelock==3.32.3 \
     frozenlist==1.8.0 \
     fsspec==2026.6.0 \
     h11==0.16.0 \
@@ -85,12 +71,16 @@ RUN pip install --no-cache-dir --only-binary=:all: \
     httpx==0.28.1 \
     huggingface-hub==1.30.0 \
     idna==3.20 \
+    jinja2==3.1.6 \
     joblib==1.6.0 \
     markdown-it-py==4.2.0 \
+    markupsafe==3.0.3 \
     mdurl==0.1.2 \
+    mpmath==1.3.0 \
     multidict==6.9.1 \
     multiprocess==0.70.19 \
     narwhals==2.26.0 \
+    networkx==3.6.1 \
     numpy==1.26.4 \
     packaging==26.3 \
     pandas==3.0.6 \
@@ -110,19 +100,24 @@ RUN pip install --no-cache-dir --only-binary=:all: \
     scipy==1.17.1 \
     sentence-transformers==6.1.0 \
     setfit==1.2.0 \
+    setuptools==78.1.0 \
     shellingham==1.5.4 \
     six==1.17.0 \
     starlette==1.7.0 \
+    sympy==1.14.0 \
     threadpoolctl==3.7.0 \
     tokenizers==0.23.2 \
+    torch==2.14.0+cpu \
     tqdm==4.70.1 \
     transformers==5.17.0 \
     typer==0.27.2 \
+    typing-extensions==4.16.0 \
     typing-inspection==0.4.4 \
     urllib3==2.8.0 \
     uvicorn==0.52.4 \
     xxhash==4.0.1 \
-    yarl==1.25.1
+    yarl==1.25.1 \
+    --extra-index-url https://download.pytorch.org/whl/cpu
 
 WORKDIR /app
 COPY src/ src/

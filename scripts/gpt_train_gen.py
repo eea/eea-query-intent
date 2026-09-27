@@ -43,9 +43,8 @@ DEDUP_DIRS = [
 ]
 
 
-def existing_texts() -> set[str]:
+def _texts_from_dirs(dirs: list[Path]) -> set[str]:
     seen = set()
-    dirs = DEDUP_DIRS + [OUT_DIR]
     for d in dirs:
         if not d.exists():
             continue
@@ -58,6 +57,23 @@ def existing_texts() -> set[str]:
     return seen
 
 
+def existing_texts() -> set[str]:
+    return _texts_from_dirs(DEDUP_DIRS + [OUT_DIR])
+
+
+def _select_fresh(got: list[str], seen: set[str], need: int) -> list[str]:
+    # keep only the first `need` fresh rows (drop batch + earlier dups)
+    fresh = []
+    for r in got:
+        key = r.casefold()
+        if key not in seen:
+            fresh.append(r)
+            seen.add(key)
+            if len(fresh) == need:
+                break
+    return fresh
+
+
 def generate_intent(
     lang: str, intent: str, n: int, batch: int, avoid: set[str]
 ) -> list[str]:
@@ -67,14 +83,7 @@ def generate_intent(
     while len(rows) < n:
         need = min(batch, n - len(rows))
         got = call_gpt(build_prompt(lang, intent, need))
-        fresh = []
-        for r in got:
-            key = r.casefold()
-            if key not in seen:
-                fresh.append(r)
-                seen.add(key)
-                if len(fresh) == need:
-                    break
+        fresh = _select_fresh(got, seen, need)
         rows.extend(fresh)
         print(f"{lang}/{intent} {len(rows)}/{n}", flush=True)
         # Escape hatch: the model can keep re-emitting phrases it already

@@ -103,6 +103,17 @@ def qa_batch(rows: list[tuple[int, str, str]], lang: str) -> dict:
     return call_gpt_raw(prompt, model=QA_MODEL)
 
 
+def _texts_from_dir(d: Path) -> list[str]:
+    texts = []
+    for path in d.glob("*.jsonl"):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                rec = json.loads(line)
+                if isinstance(rec, dict) and "text" in rec:
+                    texts.append(rec["text"].casefold())
+    return texts
+
+
 def corpus_avoid_set() -> set[str]:
     """Texts a new acceptance row must stay disjoint from (training data).
 
@@ -119,28 +130,11 @@ def corpus_avoid_set() -> set[str]:
     ):
         if not d.exists():
             continue
-        for path in d.glob("*.jsonl"):
-            for line in path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
-                    rec = json.loads(line)
-                    if isinstance(rec, dict) and "text" in rec:
-                        seen.add(rec["text"].casefold())
+        seen.update(_texts_from_dir(d))
     return seen
 
 
-def main() -> None:
-    lang = sys.argv[1]
-    raw_path = DATA_DIR / f"{lang}.raw.jsonl"
-    rows = [
-        json.loads(line)
-        for line in raw_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-
-    progress = load_progress(lang)
-    verdicts: dict[int, dict] = {}
-    for batch_verdicts in progress.values():
-        verdicts.update(batch_verdicts)
+def _qa_batches(lang: str, rows: list[dict], progress: dict) -> None:
     for start in range(0, len(rows), 200):
         if str(start) in progress:
             print(
@@ -169,6 +163,10 @@ def main() -> None:
             flush=True,
         )
 
+
+def _apply_verdicts(
+    rows: list[dict], verdicts: dict[int, dict]
+) -> tuple[dict[str, list[str]], dict[str, int]]:
     # apply verdicts, grouped by intent in original order
     kept: dict[str, list[str]] = {intent: [] for intent in TARGETS}
     stats = {"ok": 0, "fix": 0, "drop": 0}
@@ -187,11 +185,10 @@ def main() -> None:
                 stats["drop"] += 1
         else:
             stats["drop"] += 1
+    return kept, stats
 
-    # top-up any intent below target (max 4 cycles); reject top-up rows
-    # that collide with the training corpus so every slot gets a fresh row
-    avoid = corpus_avoid_set()
 
+def _sanitize_kept(kept: dict[str, list[str]], avoid: set[str]) -> None:
     # Sanitize BEFORE the top-up so it sees the true post-filter count:
     # the final pass below drops exactly these shapes, and if the top-up
     # ran first it would silently fall below target.
@@ -206,6 +203,8 @@ def main() -> None:
             clean.append(t)
         kept[intent] = clean
 
+
+def _top_up(lang: str, kept: dict[str, list[str]], avoid: set[str]) -> int:
     topups = 0
     for _cycle in range(4):
         shortfalls = {
@@ -234,7 +233,10 @@ def main() -> None:
             + ", ".join(f"{i}={len(t)}" for i, t in kept.items()),
             flush=True,
         )
+    return topups
 
+
+def _finalize_kept(kept: dict[str, list[str]]) -> dict[str, list[str]]:
     # final safety: dedupe (case-insensitive), cap word count, prune to target
     final: dict[str, list[str]] = {}
     for intent, texts in kept.items():
@@ -247,8 +249,12 @@ def main() -> None:
             seen.add(key)
             clean.append(t)
         final[intent] = clean[: TARGETS[intent]]
+    return final
 
-    counts = {intent: len(texts) for intent, texts in final.items()}
+
+def _shortfall_splits(
+    counts: dict[str, int],
+) -> tuple[dict[str, int], dict[str, int]]:
     shortfall = {
         intent: TARGETS[intent] - counts[intent]
         for intent in TARGETS
@@ -268,30 +274,17 @@ def main() -> None:
     hard = {
         intent: short for intent, short in shortfall.items() if intent not in tolerated
     }
-    log = {
-        "language": lang,
-        "raw_rows": len(rows),
-        "verdicts": stats,
-        "topups": topups,
-        "final_counts": counts,
-        "shortfall_tolerated": tolerated,
-        "complete": not hard,
-    }
-    if tolerated:
-        print(
-            f"{lang}: WARNING shortfall below quota (tolerated): {tolerated}",
-            flush=True,
-        )
-    if hard:
-        # Do not write a truncated shard: a partial output would look like a
-        # finished acceptance set to the pipeline.
-        REPORT_DIR.mkdir(parents=True, exist_ok=True)
-        (REPORT_DIR / f"acceptance_qa_{lang}.json").write_text(
-            json.dumps(log, indent=2), encoding="utf-8"
-        )
-        print(f"{lang}: below target after QA: {counts}", flush=True)
-        sys.exit(f"{lang}: below target after QA: {counts}")
+    return tolerated, hard
 
+
+def _write_log(lang: str, log: dict) -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    (REPORT_DIR / f"acceptance_qa_{lang}.json").write_text(
+        json.dumps(log, indent=2), encoding="utf-8"
+    )
+
+
+def _write_shard(lang: str, final: dict[str, list[str]]) -> Path:
     out_path = DATA_DIR / f"{lang}.jsonl"
     with out_path.open("w", encoding="utf-8") as handle:
         for intent in ("question", "exploratory", "claim", "retrieval", "unknown"):
@@ -313,11 +306,59 @@ def main() -> None:
                     )
                     + "\n"
                 )
+    return out_path
 
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    (REPORT_DIR / f"acceptance_qa_{lang}.json").write_text(
-        json.dumps(log, indent=2), encoding="utf-8"
-    )
+
+def main() -> None:
+    lang = sys.argv[1]
+    raw_path = DATA_DIR / f"{lang}.raw.jsonl"
+    rows = [
+        json.loads(line)
+        for line in raw_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    progress = load_progress(lang)
+    verdicts: dict[int, dict] = {}
+    for batch_verdicts in progress.values():
+        verdicts.update(batch_verdicts)
+    _qa_batches(lang, rows, progress)
+
+    kept, stats = _apply_verdicts(rows, verdicts)
+
+    # top-up any intent below target (max 4 cycles); reject top-up rows
+    # that collide with the training corpus so every slot gets a fresh row
+    avoid = corpus_avoid_set()
+    _sanitize_kept(kept, avoid)
+    topups = _top_up(lang, kept, avoid)
+
+    final = _finalize_kept(kept)
+
+    counts = {intent: len(texts) for intent, texts in final.items()}
+    tolerated, hard = _shortfall_splits(counts)
+    log = {
+        "language": lang,
+        "raw_rows": len(rows),
+        "verdicts": stats,
+        "topups": topups,
+        "final_counts": counts,
+        "shortfall_tolerated": tolerated,
+        "complete": not hard,
+    }
+    if tolerated:
+        print(
+            f"{lang}: WARNING shortfall below quota (tolerated): {tolerated}",
+            flush=True,
+        )
+    if hard:
+        # Do not write a truncated shard: a partial output would look like a
+        # finished acceptance set to the pipeline.
+        _write_log(lang, log)
+        print(f"{lang}: below target after QA: {counts}", flush=True)
+        sys.exit(f"{lang}: below target after QA: {counts}")
+
+    out_path = _write_shard(lang, final)
+    _write_log(lang, log)
     print(f"{lang}: wrote {out_path} counts={counts}", flush=True)
     progress_path(lang).unlink(missing_ok=True)
 

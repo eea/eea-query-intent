@@ -35,18 +35,9 @@ def load(path: str) -> list[dict]:
     ]
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--gold", required=True)
-    parser.add_argument("--predictions", required=True)
-    parser.add_argument("--threshold", type=float, default=0.86)
-    parser.add_argument("--max-no-ai-false-positive-rate", type=float, default=0.01)
-    parser.add_argument("--report", default=None)
-    args = parser.parse_args()
-
-    gold = load(args.gold)
-    preds = {row["id"]: row for row in load(args.predictions)}
-
+def _tally_buckets(
+    gold: list[dict], preds: dict[str, dict], threshold: float
+) -> dict[str, dict]:
     per: dict[str, dict] = defaultdict(
         lambda: {
             "n": 0,
@@ -61,7 +52,7 @@ def main() -> int:
         pred = preds[row["id"]]
         lang = row["language"]
         gold_eligible = row["intent"] in ("question", "exploratory", "claim")
-        routed_ai = pred["eligible_probability"] >= args.threshold
+        routed_ai = pred["eligible_probability"] >= threshold
         bucket = per[lang]
         bucket["n"] += 1
         if not routed_ai:
@@ -74,7 +65,10 @@ def main() -> int:
             bucket["no_ai"] += 1
             if routed_ai:
                 bucket["fp"] += 1
+    return per
 
+
+def _build_table(per: dict[str, dict], max_fp_rate: float) -> list[dict]:
     table = []
     for lang, b in per.items():
         fp_rate = b["fp"] / b["no_ai"] if b["no_ai"] else 0.0
@@ -90,17 +84,15 @@ def main() -> int:
                 "eligible_hit": b["hit"],
                 "eligible_recall": round(recall, 4),
                 "abstained": b["abstained"],
-                "pass": fp_rate <= args.max_no_ai_false_positive_rate,
+                "pass": fp_rate <= max_fp_rate,
             }
         )
     table.sort(key=lambda r: (-r["no_ai_false_positives"], r["language"]))
+    return table
 
-    passed = [r for r in table if r["pass"]]
-    failed = [r for r in table if not r["pass"]]
-    print(
-        f"threshold={args.threshold}   gate: no-AI FP rate <= "
-        f"{args.max_no_ai_false_positive_rate:.0%}\n"
-    )
+
+def _print_table(table: list[dict], threshold: float, max_fp_rate: float) -> None:
+    print(f"threshold={threshold}   gate: no-AI FP rate <= {max_fp_rate:.0%}\n")
     header = (
         f"{'lang':5s} {'n':>3s} {'noAI':>4s} {'FP':>3s} {'FP%':>6s} "
         f"{'elig':>4s} {'rec':>5s} {'abst':>4s}  status"
@@ -116,34 +108,73 @@ def main() -> int:
             f"{r['eligible_recall'] * 100:4.0f}% {r['abstained']:4d}  {flag}"
         )
     print("-" * len(header))
+    passed = [r for r in table if r["pass"]]
+    failed = [r for r in table if not r["pass"]]
     print(
         f"PASS {len(passed)}/{len(table)} languages | "
         f"FAIL: {', '.join(r['language'] for r in failed) or 'none'}"
     )
 
+
+def _write_report(
+    path: str,
+    threshold: float,
+    max_fp_rate: float,
+    gold: str,
+    predictions: str,
+    table: list[dict],
+) -> None:
+    # Local analyst CLI: the operator supplies the output path; there is
+    # no untrusted input channel here (no server, no remote data).
+    out = Path(path)  # NOSONAR
+    out.parent.mkdir(parents=True, exist_ok=True)
+    passed = [r for r in table if r["pass"]]
+    failed = [r for r in table if not r["pass"]]
+    out.write_text(
+        json.dumps(
+            {
+                "threshold": threshold,
+                "max_no_ai_false_positive_rate": max_fp_rate,
+                "gold": gold,
+                "predictions": predictions,
+                "passed": len(passed),
+                "total": len(table),
+                "failing_languages": [r["language"] for r in failed],
+                "table": table,
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    print(f"\nwrote {out}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--gold", required=True)
+    parser.add_argument("--predictions", required=True)
+    parser.add_argument("--threshold", type=float, default=0.86)
+    parser.add_argument("--max-no-ai-false-positive-rate", type=float, default=0.01)
+    parser.add_argument("--report", default=None)
+    args = parser.parse_args()
+
+    gold = load(args.gold)
+    preds = {row["id"]: row for row in load(args.predictions)}
+
+    per = _tally_buckets(gold, preds, args.threshold)
+    table = _build_table(per, args.max_no_ai_false_positive_rate)
+    _print_table(table, args.threshold, args.max_no_ai_false_positive_rate)
+
     if args.report:
-        # Local analyst CLI: the operator supplies the output path; there is
-        # no untrusted input channel here (no server, no remote data).
-        out = Path(args.report)  # NOSONAR
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(
-            json.dumps(
-                {
-                    "threshold": args.threshold,
-                    "max_no_ai_false_positive_rate": args.max_no_ai_false_positive_rate,
-                    "gold": args.gold,
-                    "predictions": args.predictions,
-                    "passed": len(passed),
-                    "total": len(table),
-                    "failing_languages": [r["language"] for r in failed],
-                    "table": table,
-                },
-                indent=2,
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
+        _write_report(
+            args.report,
+            args.threshold,
+            args.max_no_ai_false_positive_rate,
+            args.gold,
+            args.predictions,
+            table,
         )
-        print(f"\nwrote {out}")
     return 0
 
 

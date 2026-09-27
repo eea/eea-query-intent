@@ -194,18 +194,59 @@ def generate_batch(tokenizer, model, spec: dict, texts: list[str]) -> list[str]:
     return tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
 
+def _row_id(rec: dict, lang: str, id_prefix: str, kept_count: int) -> str:
+    parts = rec["id"].split("-")
+    if len(parts) >= 3 and parts[1] == "en":
+        # v1ex-en-question-0001 -> v1ex-de-question-0001 (lineage)
+        return f"{parts[0]}-{lang}-{'-'.join(parts[2:])}"
+    return f"{id_prefix}-{lang}-{rec['intent']}-{kept_count + 1:04d}"
+
+
+def _process_row(
+    rec: dict,
+    translated: str,
+    lang: str,
+    id_prefix: str,
+    kept: list[dict],
+    seen: set[str],
+    blocked: set[str],
+    drops: Counter,
+    flags: Counter,
+) -> None:
+    text = translated.strip()
+    reason, flag = heuristic_qa(text, rec["text"])
+    key = text.casefold() if reason is None else ""
+    if reason is None and key in blocked:
+        reason = "collision"
+    if reason is None and key in seen:
+        reason = "duplicate"
+    if reason is not None:
+        drops[reason] += 1
+        return
+    if flag:
+        flags[flag] += 1
+    seen.add(key)
+    rid = _row_id(rec, lang, id_prefix, len(kept))
+    kept.append(
+        {
+            "id": rid,
+            "template_id": rid,
+            "language": lang,
+            "text": text,
+            "intent": rec["intent"],
+            "source_type": "nllb_translated",
+            "review_status": "machine_translated",
+            "split": "train",
+            "source_id": rec["id"],
+        }
+    )
+
+
 def translate_language(
     lang: str, rows: list[dict], out_dir: Path, id_prefix: str = "nllb"
 ) -> None:
     tokenizer, model, spec = build_engine(lang)
     print(f"[{lang}] model loaded; translating {len(rows)} rows", flush=True)
-
-    def row_id(rec: dict) -> str:
-        parts = rec["id"].split("-")
-        if len(parts) >= 3 and parts[1] == "en":
-            # v1ex-en-question-0001 -> v1ex-de-question-0001 (lineage)
-            return f"{parts[0]}-{lang}-{'-'.join(parts[2:])}"
-        return f"{id_prefix}-{lang}-{rec['intent']}-{len(kept) + 1:04d}"
 
     blocked = blocked_texts()
     out_path = out_dir / f"{lang}.jsonl"
@@ -221,32 +262,16 @@ def translate_language(
         t0 = time.time()
         results = generate_batch(tokenizer, model, spec, texts)
         for rec, translated in zip(chunk, results, strict=True):
-            text = translated.strip()
-            reason, flag = heuristic_qa(text, rec["text"])
-            key = text.casefold() if reason is None else ""
-            if reason is None and key in blocked:
-                reason = "collision"
-            if reason is None and key in seen:
-                reason = "duplicate"
-            if reason is not None:
-                drops[reason] += 1
-                continue
-            if flag:
-                flags[flag] += 1
-            seen.add(key)
-            rid = row_id(rec)
-            kept.append(
-                {
-                    "id": rid,
-                    "template_id": rid,
-                    "language": lang,
-                    "text": text,
-                    "intent": rec["intent"],
-                    "source_type": "nllb_translated",
-                    "review_status": "machine_translated",
-                    "split": "train",
-                    "source_id": rec["id"],
-                }
+            _process_row(
+                rec,
+                translated,
+                lang,
+                id_prefix,
+                kept,
+                seen,
+                blocked,
+                drops,
+                flags,
             )
         elapsed = time.time() - t0
         rate = len(chunk) / elapsed if elapsed else 0

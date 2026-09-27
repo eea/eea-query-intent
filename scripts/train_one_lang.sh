@@ -53,21 +53,23 @@ if [[ -f .pipeline/gpt_paused ]]; then
   GPT_FALLBACK=0
 fi
 
-# run_step <script> <model>: run one pipeline step; the step is resumable,
-# so a retry after a failure continues where it stopped.
+# run_step <script> <model> <lang>: run one pipeline step; the step is
+# resumable, so a retry after a failure continues where it stopped.
 run_step() {
-  export EEA_QI_GEN_MODEL="$2" EEA_QI_QA_MODEL="$2"
-  uv run python "scripts/$1" "$LANG_"
+  local script="$1" model="$2" lang="$3"
+  export EEA_QI_GEN_MODEL="$model" EEA_QI_QA_MODEL="$model"
+  uv run python "scripts/$script" "$lang"
+  return $?
 }
 
 echo "${LANG_} start $(date) gen_model=${GEN_M}"
-if ! run_step gpt_train_gen.py "$GEN_M"; then
+if ! run_step gpt_train_gen.py "$GEN_M" "$LANG_"; then
   if [[ "$GEN_M" != "$GPTM" ]] && [[ "$GPT_FALLBACK" = "1" ]]; then
     # In-house failed (truncated JSON, gateway hiccup...): the model is
     # "not sure" about this language, so fall back to GPT per the routing
     # rule. The partial raw file makes the retry continue per intent.
     echo "${LANG_}: in-house gen failed - falling back to GPT"
-    if ! run_step gpt_train_gen.py "$GPTM"; then
+    if ! run_step gpt_train_gen.py "$GPTM" "$LANG_"; then
       echo "${LANG_}: gen FAILED (GPT fallback too)"; exit 1
     fi
     GEN_M="$GPTM"
@@ -76,10 +78,10 @@ if ! run_step gpt_train_gen.py "$GEN_M"; then
   fi
 fi
 echo "${LANG_} qa $(date) qa_model=${QA_M}"
-if ! run_step gpt_train_qa.py "$QA_M"; then
+if ! run_step gpt_train_qa.py "$QA_M" "$LANG_"; then
   if [[ "$QA_M" != "$GPTM" ]] && [[ "$GPT_FALLBACK" = "1" ]]; then
     echo "${LANG_}: in-house QA failed - falling back to GPT"
-    if ! run_step gpt_train_qa.py "$GPTM"; then
+    if ! run_step gpt_train_qa.py "$GPTM" "$LANG_"; then
       echo "${LANG_}: qa FAILED (GPT fallback too)"; exit 1
     fi
   else

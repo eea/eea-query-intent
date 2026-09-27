@@ -4,6 +4,7 @@ from eea_query_intent.dataset import DatasetRecord
 from eea_query_intent.metrics import (
     AcceptanceThresholds,
     PredictionRecord,
+    PredictionValidationError,
     evaluate_predictions,
 )
 
@@ -119,3 +120,49 @@ def test_rejects_missing_and_extra_predictions() -> None:
             records,
             [prediction("q", "question", 0.9), prediction("extra", "claim", 0.9)],
         )
+
+
+def test_prediction_requires_all_contract_fields() -> None:
+    row = {
+        "id": "q",
+        "intent": "question",
+        "eligible": True,
+        "eligible_probability": 0.9,
+        "confidence": 0.9,
+        "abstained": False,
+        "model_version": "test-model",
+    }
+
+    with pytest.raises(
+        PredictionValidationError,
+        match="missing prediction field 'latency_ms'",
+    ):
+        PredictionRecord.from_mapping(row)
+
+
+def test_prediction_rejects_invalid_numbers() -> None:
+    for bad in (-0.1, True):
+        with pytest.raises(PredictionValidationError, match="non-negative number"):
+            prediction("q", "question", bad)  # type: ignore[arg-type]
+
+
+def test_binary_head_predictions_route_by_label() -> None:
+    def binary(
+        record_id: str, intent: str, probability: float, abstained: bool
+    ) -> PredictionRecord:
+        return PredictionRecord.from_mapping(
+            {
+                "id": record_id,
+                "intent": intent,
+                "eligible": intent == "eligible" and not abstained,
+                "eligible_probability": probability,
+                "confidence": probability,
+                "abstained": abstained,
+                "model_version": "test-model",
+                "latency_ms": 10.0,
+            }
+        )
+
+    assert binary("q", "eligible", 0.97, False).eligible is True
+    assert binary("q", "eligible", 0.97, True).eligible is False
+    assert binary("k", "ineligible", 0.2, False).eligible is False

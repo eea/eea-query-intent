@@ -40,16 +40,16 @@ ARG HF_MODEL_REVISION=ba111788b58e4f1e0dafb3e74189f0a08d1e3186
 # which is the single source of truth for the image's dependencies.
 COPY runtime-requirements.txt /tmp/runtime-requirements.txt
 
-# Single install layer (S7031): install the locked file. PyPI is the
-# primary index and the PyTorch CPU mirror is an extra index; the torch
-# pin carries the +cpu local version tag, so it can only resolve from the
-# CPU mirror - pip never pulls the CUDA-bundled wheel (~2.5 GB). pip
-# still verifies the full graph, so a stale pin fails the build loudly.
-# --only-binary=:all: refuses sdist builds (no setup-script execution,
-# S8541).
-RUN pip install --no-cache-dir --only-binary=:all: \
-    --extra-index-url https://download.pytorch.org/whl/cpu \
-    -r /tmp/runtime-requirements.txt
+# Single install layer (S7031): bake a pip config (wheel-only installs,
+# no sdist builds - S8541 hardening; and the PyTorch CPU mirror as an
+# extra index, from which the +cpu torch pin is the only resolvable
+# source, so the CUDA-bundled wheel is never pulled) and install the
+# locked file. pip still verifies the full dependency graph, so a stale
+# pin fails the build loudly.
+RUN printf '[global]\n' > /etc/pip.conf \
+    && printf 'only-binary = :all:\n' >> /etc/pip.conf \
+    && printf 'extra-index-url = https://download.pytorch.org/whl/cpu\n' >> /etc/pip.conf \
+    && pip install --no-cache-dir -r /tmp/runtime-requirements.txt
 
 WORKDIR /app
 COPY src/ src/

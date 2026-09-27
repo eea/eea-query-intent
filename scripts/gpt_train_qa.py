@@ -5,7 +5,8 @@ data/training/v1: applies ok/fix/drop verdicts, tops up intents below
 TRAIN_QUOTAS, prunes, and writes data/training/v1/<lang>.jsonl with
 review_status llm_reviewed and split train. Final rows are re-checked
 against every other dataset so a QA "fix" can never leak an acceptance
-holdout text into training.
+holdout text into training. The shared pipeline lives in
+scripts/gpt_common.py.
 
 Usage: uv run python scripts/gpt_train_qa.py <lang>
 """
@@ -14,12 +15,28 @@ import json
 import sys
 from pathlib import Path
 
-from gpt_acceptance_gen import build_prompt, call_gpt
 from gpt_acceptance_qa import qa_batch
+from gpt_common import (
+    apply_verdicts,
+    finalize_kept,
+    load_progress,
+    run_qa_batches,
+    sanitize_kept,
+    shortfall_splits,
+    texts_from_dirs,
+    top_up,
+    write_report_log,
+    write_shard,
+)
 from gpt_train_gen import DEDUP_DIRS, OUT_DIR, TRAIN_QUOTAS
 
 ROOT = Path(__file__).resolve().parent.parent
 REPORT_DIR = ROOT / "reports"
+
+# Retrieval (1-6-word keyword phrases) has a lower diversity ceiling in
+# the narrow EEA domain, so it gets a wider shortfall band than the
+# other intents (gpt_common.shortfall_splits).
+TOLERANCE = {"retrieval": 0.10}
 
 
 def progress_path(lang: str) -> Path:
@@ -28,259 +45,9 @@ def progress_path(lang: str) -> Path:
     return OUT_DIR / f"{lang}.qa_progress"
 
 
-def load_progress(lang: str) -> dict[str, dict[int, dict]]:
-    """Return {batch_start: {row_index: verdict}} from prior runs.
-
-    The QA pass is resumable: each completed batch is appended to the
-    progress file, so a killed process restarts where it left off instead
-    of re-paying for already-reviewed batches.
-    """
-    path = progress_path(lang)
-    done: dict[str, dict[int, dict]] = {}
-    if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            rec = json.loads(line)
-            done[str(rec["start"])] = {int(k): v for k, v in rec["verdicts"].items()}
-    return done
-
-
-def save_batch_progress(lang: str, start: int, verdicts: dict[int, dict]) -> None:
-    rec = {"start": start, "verdicts": {str(k): v for k, v in verdicts.items()}}
-    with progress_path(lang).open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(rec, ensure_ascii=False) + "\n")
-        handle.flush()
-
-
-def _text_from_line(line: str) -> str | None:
-    if not line.strip():
-        return None
-    rec = json.loads(line)
-    if isinstance(rec, dict) and "text" in rec:
-        return rec["text"].casefold()
-    return None
-
-
-def _texts_from_dir(d: Path, exclude: set[Path]) -> set[str]:
-    seen: set[str] = set()
-    for path in d.glob("*.jsonl"):
-        if path in exclude:
-            continue
-        for text in map(_text_from_line, path.read_text(encoding="utf-8").splitlines()):
-            if text is not None:
-                seen.add(text)
-    return seen
-
-
-def _texts_from_dirs_excluding(dirs: list[Path], exclude: set[Path]) -> set[str]:
-    seen: set[str] = set()
-    for d in dirs:
-        seen |= _texts_from_dir(d, exclude)
-    return seen
-
-
-def final_avoid_set(exclude: set[Path]) -> set[str]:
+def final_avoid_set(exclude: frozenset[Path]) -> set[str]:
     dirs = [d for d in DEDUP_DIRS + [OUT_DIR] if d.exists()]
-    return _texts_from_dirs_excluding(dirs, exclude)
-
-
-def _qa_batches(lang: str, rows: list[dict], progress: dict) -> None:
-    for start in range(0, len(rows), 200):
-        if str(start) in progress:
-            print(
-                f"{lang} train-QA batch {start + 1}-"
-                f"{min(start + 200, len(rows))}/{len(rows)} resumed from progress",
-                flush=True,
-            )
-            continue
-        chunk = rows[start : start + 200]
-        numbered = [
-            (start + j, rec["intent"], rec["text"]) for j, rec in enumerate(chunk)
-        ]
-        res = qa_batch(numbered, lang)
-        by_i = {r["i"]: r for r in res.get("rows", [])}
-        batch_verdicts: dict[int, dict] = {}
-        for i, _intent, _text in numbered:
-            v = by_i.get(i)
-            verdict = (
-                v
-                if v is not None
-                else {"v": "drop", "t": "", "r": "missing-from-output"}
-            )
-            batch_verdicts[i] = verdict
-        save_batch_progress(lang, start, batch_verdicts)
-        # The pre-loop merge only saw progress that existed at start; fold
-        # freshly reviewed batches in or the final per-row merge below
-        # KeyErrors on the first index of any batch this run executed.
-        progress[start] = batch_verdicts
-        print(
-            f"{lang} train-QA batch {start + 1}-{start + len(chunk)}/{len(rows)}",
-            flush=True,
-        )
-
-
-def _apply_verdicts(
-    rows: list[dict], verdicts: dict[int, dict]
-) -> tuple[dict[str, list[str]], dict[str, int]]:
-    kept: dict[str, list[str]] = {intent: [] for intent in TRAIN_QUOTAS}
-    stats = {"ok": 0, "fix": 0, "drop": 0}
-    for idx, rec in enumerate(rows):
-        v = verdicts[idx]
-        kind = v.get("v", "drop")
-        if kind == "ok":
-            kept[rec["intent"]].append(rec["text"].strip())
-            stats["ok"] += 1
-        elif kind == "fix":
-            corrected = (v.get("t") or "").strip()
-            if corrected:
-                kept[rec["intent"]].append(corrected)
-                stats["fix"] += 1
-            else:
-                stats["drop"] += 1
-        else:
-            stats["drop"] += 1
-    return kept, stats
-
-
-def _sanitize_kept(kept: dict[str, list[str]], avoid: set[str]) -> None:
-    # Sanitize kept BEFORE the top-up so it sees the true post-filter
-    # count: the final pass below drops exactly these shapes, and if the
-    # top-up ran first it would silently fall below target.
-    for intent in kept:
-        seen = set()
-        clean = []
-        for t in kept[intent]:
-            key = t.casefold()
-            if not t or len(t.split()) > 20 or key in seen or key in avoid:
-                continue
-            seen.add(key)
-            clean.append(t)
-        kept[intent] = clean
-
-
-def _top_up_intent(
-    lang: str, intent: str, n: int, kept_texts: list[str], avoid: set[str]
-) -> int:
-    generated = call_gpt(build_prompt(lang, intent, n))
-    res = qa_batch(
-        [(j, intent, text) for j, text in enumerate(generated, start=1)], lang
-    )
-    by_i = {r["i"]: r for r in res.get("rows", [])}
-    seen = {t.casefold() for t in kept_texts}
-    added = 0
-    for j, text in enumerate(generated, start=1):
-        v = by_i.get(j)
-        if v and v.get("v") in ("ok", "fix"):
-            t = (v.get("t") or text).strip()
-            if t and t.casefold() not in seen and t.casefold() not in avoid:
-                kept_texts.append(t)
-                seen.add(t.casefold())
-                added += 1
-    return added
-
-
-def _top_up(lang: str, kept: dict[str, list[str]], avoid: set[str]) -> int:
-    topups = 0
-    for _cycle in range(6):
-        need = {
-            intent: TRAIN_QUOTAS[intent] - len(texts)
-            for intent, texts in kept.items()
-            if len(texts) < TRAIN_QUOTAS[intent]
-        }
-        if not need:
-            break
-        for intent, n in need.items():
-            topups += _top_up_intent(lang, intent, n, kept[intent], avoid)
-        print(
-            f"{lang} after top-up: "
-            + ", ".join(f"{i}={len(t)}" for i, t in kept.items()),
-            flush=True,
-        )
-    return topups
-
-
-def _finalize_kept(
-    kept: dict[str, list[str]], avoid: set[str]
-) -> tuple[dict[str, list[str]], int]:
-    # final safety: dedupe, cap word count, drop anything that collides
-    # with another dataset (incl. the acceptance holdout), prune to target.
-    # (avoid was computed before the top-up and is still valid: the top-up
-    # only adds rows that are already outside it.)
-    final: dict[str, list[str]] = {}
-    leaked = 0
-    for intent, texts in kept.items():
-        seen = set()
-        clean = []
-        for t in texts:
-            key = t.casefold()
-            if not t or len(t.split()) > 20 or key in seen or key in avoid:
-                leaked += int(key in avoid)
-                continue
-            seen.add(key)
-            clean.append(t)
-        final[intent] = clean[: TRAIN_QUOTAS[intent]]
-    return final, leaked
-
-
-def _shortfall_splits(
-    counts: dict[str, int],
-) -> tuple[dict[str, int], dict[str, int], dict[str, int]]:
-    shortfall = {
-        intent: TRAIN_QUOTAS[intent] - counts[intent]
-        for intent in TRAIN_QUOTAS
-        if counts[intent] < TRAIN_QUOTAS[intent]
-    }
-    # Quotas are data-shape targets, not hard requirements: the collision-
-    # aware top-up can legitimately run dry when the model keeps producing
-    # canonical short phrases that hit the corpus avoid-set. Shortfalls up
-    # to a per-intent tolerance are accepted with a loud warning; more is a
-    # hard failure. Retrieval (1-6-word keyword phrases) has a lower
-    # diversity ceiling in the narrow EEA domain, so it gets a wider band.
-    TOLERANCE = {"retrieval": 0.10}
-    DEFAULT_TOLERANCE = 0.05
-    tolerated = {
-        intent: short
-        for intent, short in shortfall.items()
-        if counts[intent]
-        >= (1 - TOLERANCE.get(intent, DEFAULT_TOLERANCE)) * TRAIN_QUOTAS[intent]
-    }
-    hard = {
-        intent: short for intent, short in shortfall.items() if intent not in tolerated
-    }
-    return shortfall, tolerated, hard
-
-
-def _write_log(lang: str, log: dict) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    (REPORT_DIR / f"train_qa_{lang}.json").write_text(
-        json.dumps(log, indent=2), encoding="utf-8"
-    )
-
-
-def _write_shard(lang: str, final: dict[str, list[str]]) -> Path:
-    out_path = OUT_DIR / f"{lang}.jsonl"
-    with out_path.open("w", encoding="utf-8") as handle:
-        for intent in ("question", "exploratory", "claim", "retrieval", "unknown"):
-            for seq, text in enumerate(final[intent], start=1):
-                row_id = f"trn-{lang}-{intent}-{seq:04d}"
-                handle.write(
-                    json.dumps(
-                        {
-                            "id": row_id,
-                            "template_id": row_id,
-                            "language": lang,
-                            "text": text,
-                            "intent": intent,
-                            "source_type": "synthetic_generated",
-                            "review_status": "llm_reviewed",
-                            "split": "train",
-                        },
-                        ensure_ascii=False,
-                    )
-                    + "\n"
-                )
-    return out_path
+    return texts_from_dirs(dirs, exclude)
 
 
 def main() -> None:
@@ -292,28 +59,30 @@ def main() -> None:
         if line.strip()
     ]
 
-    progress = load_progress(lang)
+    progress = load_progress(progress_path(lang))
     verdicts: dict[int, dict] = {}
     for batch_verdicts in progress.values():
         verdicts.update(batch_verdicts)
-    _qa_batches(lang, rows, progress)
-    for batch_verdicts in progress.values():
-        verdicts.update(batch_verdicts)
+    run_qa_batches(
+        lang, rows, progress, verdicts, progress_path(lang), "train-QA", qa_batch
+    )
 
-    kept, stats = _apply_verdicts(rows, verdicts)
+    kept, stats = apply_verdicts(rows, verdicts, TRAIN_QUOTAS)
 
     # Compute the final safety pass's avoid set BEFORE the top-up so
     # top-up rows that collide with existing corpus texts are rejected at
     # generation time instead of being silently dropped at the end (that
     # caused below-target restart loops).
-    avoid = final_avoid_set({OUT_DIR / f"{lang}.jsonl", OUT_DIR / f"{lang}.raw.jsonl"})
-    _sanitize_kept(kept, avoid)
-    topups = _top_up(lang, kept, avoid)
+    avoid = final_avoid_set(
+        frozenset({OUT_DIR / f"{lang}.jsonl", OUT_DIR / f"{lang}.raw.jsonl"})
+    )
+    sanitize_kept(kept, avoid)
+    topups = top_up(lang, kept, avoid, 6, TRAIN_QUOTAS, qa_batch)
 
-    final, leaked = _finalize_kept(kept, avoid)
+    final, leaked = finalize_kept(kept, TRAIN_QUOTAS, avoid)
 
     counts = {intent: len(texts) for intent, texts in final.items()}
-    shortfall, tolerated, hard = _shortfall_splits(counts)
+    shortfall, tolerated, hard = shortfall_splits(counts, TRAIN_QUOTAS, TOLERANCE)
     log = {
         "language": lang,
         "raw_rows": len(rows),
@@ -333,12 +102,12 @@ def main() -> None:
     if hard:
         # Do not write a truncated file: a partial output would look like a
         # finished dataset to the pipeline.
-        _write_log(lang, log)
+        write_report_log(REPORT_DIR, "train_qa", lang, log)
         print(f"{lang}: below target after QA: {counts}", flush=True)
         sys.exit(f"{lang}: below target after QA: {counts}")
 
-    out_path = _write_shard(lang, final)
-    _write_log(lang, log)
+    out_path = write_shard(OUT_DIR / f"{lang}.jsonl", lang, final, "trn", "train")
+    write_report_log(REPORT_DIR, "train_qa", lang, log)
     print(f"{lang}: wrote {out_path} counts={counts}", flush=True)
     progress_path(lang).unlink(missing_ok=True)
 

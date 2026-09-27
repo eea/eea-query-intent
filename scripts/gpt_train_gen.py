@@ -18,6 +18,8 @@ import sys
 import time
 from pathlib import Path
 
+from gpt_common import texts_from_dirs
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -43,35 +45,8 @@ DEDUP_DIRS = [
 ]
 
 
-def _text_from_line(line: str) -> str | None:
-    if not line.strip():
-        return None
-    rec = json.loads(line)
-    if isinstance(rec, dict) and "text" in rec:
-        return rec["text"].casefold()
-    return None
-
-
-def _texts_from_dir(d: Path) -> set[str]:
-    seen: set[str] = set()
-    if d.exists():
-        for path in d.glob("*.jsonl"):
-            lines = path.read_text(encoding="utf-8").splitlines()
-            for text in map(_text_from_line, lines):
-                if text is not None:
-                    seen.add(text)
-    return seen
-
-
-def _texts_from_dirs(dirs: list[Path]) -> set[str]:
-    seen: set[str] = set()
-    for d in dirs:
-        seen |= _texts_from_dir(d)
-    return seen
-
-
 def existing_texts() -> set[str]:
-    return _texts_from_dirs(DEDUP_DIRS + [OUT_DIR])
+    return texts_from_dirs(DEDUP_DIRS + [OUT_DIR])
 
 
 def _select_fresh(got: list[str], seen: set[str], need: int) -> list[str]:

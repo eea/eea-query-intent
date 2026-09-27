@@ -153,6 +153,53 @@ def _row_problems(
     return errors, True
 
 
+def _validate_shard(
+    shard: Path,
+    existing_texts: set[str],
+    existing_templates: set[str],
+    seen_templates: set[str],
+    all_rows: list[dict],
+    errors: list[str],
+) -> dict:
+    lang = shard.stem
+    rows = [
+        json.loads(line)
+        for line in shard.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    counts = dict.fromkeys(INTENTS, 0)
+    seen_texts: set[str] = set()
+    for row in rows:
+        problems, intent_valid = _row_problems(
+            row,
+            lang,
+            seen_texts,
+            seen_templates,
+            existing_texts,
+            existing_templates,
+        )
+        errors.extend(problems)
+        if not intent_valid:
+            continue
+        counts[row["intent"]] += 1
+        seen_texts.add(row["text"].casefold())
+        seen_templates.add(row.get("template_id"))
+        all_rows.append(row)
+    for intent in INTENTS:
+        if counts[intent] != TARGETS[intent]:
+            errors.append(
+                f"{lang}: {intent} count {counts[intent]} != {TARGETS[intent]}"
+            )
+    return {"rows": len(rows), "counts": counts}
+
+
+def _report_errors(errors: list[str]) -> None:
+    for err in errors[:20]:
+        print(f"ERROR {err}", file=sys.stderr)
+    if len(errors) > 20:
+        print(f"ERROR ... and {len(errors) - 20} more", file=sys.stderr)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--merge", action="store_true", help="write merged test.jsonl")
@@ -175,36 +222,9 @@ def main() -> None:
     per_language: dict[str, dict] = {}
 
     for shard in shards:
-        lang = shard.stem
-        rows = [
-            json.loads(line)
-            for line in shard.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
-        counts = dict.fromkeys(INTENTS, 0)
-        seen_texts: set[str] = set()
-        for row in rows:
-            problems, intent_valid = _row_problems(
-                row,
-                lang,
-                seen_texts,
-                seen_templates,
-                existing_texts,
-                existing_templates,
-            )
-            errors.extend(problems)
-            if not intent_valid:
-                continue
-            counts[row["intent"]] += 1
-            seen_texts.add(row["text"].casefold())
-            seen_templates.add(row.get("template_id"))
-            all_rows.append(row)
-        for intent in INTENTS:
-            if counts[intent] != TARGETS[intent]:
-                errors.append(
-                    f"{lang}: {intent} count {counts[intent]} != {TARGETS[intent]}"
-                )
-        per_language[lang] = {"rows": len(rows), "counts": counts}
+        per_language[shard.stem] = _validate_shard(
+            shard, existing_texts, existing_templates, seen_templates, all_rows, errors
+        )
 
     summary = {
         "languages": len(shards),
@@ -216,10 +236,7 @@ def main() -> None:
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     if errors:
-        for err in errors[:20]:
-            print(f"ERROR {err}", file=sys.stderr)
-        if len(errors) > 20:
-            print(f"ERROR ... and {len(errors) - 20} more", file=sys.stderr)
+        _report_errors(errors)
         sys.exit(1)
 
     if args.merge:

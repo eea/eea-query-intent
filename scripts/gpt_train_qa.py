@@ -53,17 +53,30 @@ def save_batch_progress(lang: str, start: int, verdicts: dict[int, dict]) -> Non
         handle.flush()
 
 
+def _text_from_line(line: str) -> str | None:
+    if not line.strip():
+        return None
+    rec = json.loads(line)
+    if isinstance(rec, dict) and "text" in rec:
+        return rec["text"].casefold()
+    return None
+
+
+def _texts_from_dir(d: Path, exclude: set[Path]) -> set[str]:
+    seen: set[str] = set()
+    for path in d.glob("*.jsonl"):
+        if path in exclude:
+            continue
+        for text in map(_text_from_line, path.read_text(encoding="utf-8").splitlines()):
+            if text is not None:
+                seen.add(text)
+    return seen
+
+
 def _texts_from_dirs_excluding(dirs: list[Path], exclude: set[Path]) -> set[str]:
-    seen = set()
+    seen: set[str] = set()
     for d in dirs:
-        for path in d.glob("*.jsonl"):
-            if path in exclude:
-                continue
-            for line in path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
-                    rec = json.loads(line)
-                    if isinstance(rec, dict) and "text" in rec:
-                        seen.add(rec["text"].casefold())
+        seen |= _texts_from_dir(d, exclude)
     return seen
 
 
@@ -146,6 +159,27 @@ def _sanitize_kept(kept: dict[str, list[str]], avoid: set[str]) -> None:
         kept[intent] = clean
 
 
+def _top_up_intent(
+    lang: str, intent: str, n: int, kept_texts: list[str], avoid: set[str]
+) -> int:
+    generated = call_gpt(build_prompt(lang, intent, n))
+    res = qa_batch(
+        [(j, intent, text) for j, text in enumerate(generated, start=1)], lang
+    )
+    by_i = {r["i"]: r for r in res.get("rows", [])}
+    seen = {t.casefold() for t in kept_texts}
+    added = 0
+    for j, text in enumerate(generated, start=1):
+        v = by_i.get(j)
+        if v and v.get("v") in ("ok", "fix"):
+            t = (v.get("t") or text).strip()
+            if t and t.casefold() not in seen and t.casefold() not in avoid:
+                kept_texts.append(t)
+                seen.add(t.casefold())
+                added += 1
+    return added
+
+
 def _top_up(lang: str, kept: dict[str, list[str]], avoid: set[str]) -> int:
     topups = 0
     for _cycle in range(6):
@@ -157,20 +191,7 @@ def _top_up(lang: str, kept: dict[str, list[str]], avoid: set[str]) -> int:
         if not need:
             break
         for intent, n in need.items():
-            generated = call_gpt(build_prompt(lang, intent, n))
-            res = qa_batch(
-                [(j, intent, text) for j, text in enumerate(generated, start=1)], lang
-            )
-            by_i = {r["i"]: r for r in res.get("rows", [])}
-            seen = {t.casefold() for t in kept[intent]}
-            for j, text in enumerate(generated, start=1):
-                v = by_i.get(j)
-                if v and v.get("v") in ("ok", "fix"):
-                    t = (v.get("t") or text).strip()
-                    if t and t.casefold() not in seen and t.casefold() not in avoid:
-                        kept[intent].append(t)
-                        seen.add(t.casefold())
-                        topups += 1
+            topups += _top_up_intent(lang, intent, n, kept[intent], avoid)
         print(
             f"{lang} after top-up: "
             + ", ".join(f"{i}={len(t)}" for i, t in kept.items()),

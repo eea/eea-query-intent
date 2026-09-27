@@ -243,6 +243,37 @@ def _emit_flagged(
     )
 
 
+def _scan_row(
+    rec: dict,
+    name: str,
+    name_lang: str,
+    exam_blocked: set[str],
+    en_by_id: dict[str, str],
+    index: dict[str, list[tuple[str, str, str, str]]],
+    seen_local: dict[str, str],
+    counts: Counter[str],
+    flagged,
+) -> None:
+    text = rec.get("text", "").strip()
+    folded = text.casefold()
+    intent = rec.get("intent", "")
+    rid = rec.get("id", "?")
+    lang = rec.get("language") or name_lang
+    if lang and folded:
+        index[folded].append((name, lang, intent, rid))
+    flags: list[str] = []
+    check_row(rec, lang, exam_blocked, en_by_id, flags)
+    if folded and lang:
+        if folded in seen_local:
+            flags.append("dupe_intra")
+        else:
+            seen_local[folded] = rid
+    for f in flags:
+        counts[f] += 1
+    if flags:
+        _emit_flagged(flagged, name, rid, lang, intent, flags, text)
+
+
 def _scan_intra(
     rows: list[dict],
     name: str,
@@ -256,24 +287,17 @@ def _scan_intra(
     seen_local: dict[str, str] = {}
     # first pass: index + intra-corpus checks
     for rec in rows:
-        text = rec.get("text", "").strip()
-        folded = text.casefold()
-        intent = rec.get("intent", "")
-        rid = rec.get("id", "?")
-        lang = rec.get("language") or name_lang
-        if lang and folded:
-            index[folded].append((name, lang, intent, rid))
-        flags: list[str] = []
-        check_row(rec, lang, exam_blocked, en_by_id, flags)
-        if folded and lang:
-            if folded in seen_local:
-                flags.append("dupe_intra")
-            else:
-                seen_local[folded] = rid
-        for f in flags:
-            counts[f] += 1
-        if flags:
-            _emit_flagged(flagged, name, rid, lang, intent, flags, text)
+        _scan_row(
+            rec,
+            name,
+            name_lang,
+            exam_blocked,
+            en_by_id,
+            index,
+            seen_local,
+            counts,
+            flagged,
+        )
 
 
 def _cross_corpus_flags(

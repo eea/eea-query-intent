@@ -43,17 +43,30 @@ DEDUP_DIRS = [
 ]
 
 
-def _texts_from_dirs(dirs: list[Path]) -> set[str]:
-    seen = set()
-    for d in dirs:
-        if not d.exists():
-            continue
+def _text_from_line(line: str) -> str | None:
+    if not line.strip():
+        return None
+    rec = json.loads(line)
+    if isinstance(rec, dict) and "text" in rec:
+        return rec["text"].casefold()
+    return None
+
+
+def _texts_from_dir(d: Path) -> set[str]:
+    seen: set[str] = set()
+    if d.exists():
         for path in d.glob("*.jsonl"):
-            for line in path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
-                    rec = json.loads(line)
-                    if isinstance(rec, dict) and "text" in rec:
-                        seen.add(rec["text"].casefold())
+            lines = path.read_text(encoding="utf-8").splitlines()
+            for text in map(_text_from_line, lines):
+                if text is not None:
+                    seen.add(text)
+    return seen
+
+
+def _texts_from_dirs(dirs: list[Path]) -> set[str]:
+    seen: set[str] = set()
+    for d in dirs:
+        seen |= _texts_from_dir(d)
     return seen
 
 

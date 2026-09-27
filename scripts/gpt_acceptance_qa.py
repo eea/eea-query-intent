@@ -204,30 +204,39 @@ def _sanitize_kept(kept: dict[str, list[str]], avoid: set[str]) -> None:
         kept[intent] = clean
 
 
+def _top_up_intent(
+    lang: str, intent: str, n: int, kept_texts: list[str], avoid: set[str]
+) -> int:
+    generated = call_gpt(build_prompt(lang, intent, n))
+    res = qa_batch(
+        [(j, intent, text) for j, text in enumerate(generated, start=1)], lang
+    )
+    by_i = {r["i"]: r for r in res.get("rows", [])}
+    seen = {t.casefold() for t in kept_texts}
+    added = 0
+    for j, text in enumerate(generated, start=1):
+        v = by_i.get(j)
+        if v and v.get("v") in ("ok", "fix"):
+            t = (v.get("t") or text).strip()
+            if t and t.casefold() not in seen and t.casefold() not in avoid:
+                kept_texts.append(t)
+                seen.add(t.casefold())
+                added += 1
+    return added
+
+
 def _top_up(lang: str, kept: dict[str, list[str]], avoid: set[str]) -> int:
     topups = 0
     for _cycle in range(4):
-        shortfalls = {
-            intent: TARGETS[intent] - len(texts) for intent, texts in kept.items()
+        need = {
+            intent: TARGETS[intent] - len(texts)
+            for intent, texts in kept.items()
+            if len(texts) < TARGETS[intent]
         }
-        need = {i: n for i, n in shortfalls.items() if n > 0}
         if not need:
             break
         for intent, n in need.items():
-            generated = call_gpt(build_prompt(lang, intent, n))
-            res = qa_batch(
-                [(j, intent, text) for j, text in enumerate(generated, start=1)], lang
-            )
-            by_i = {r["i"]: r for r in res.get("rows", [])}
-            seen = {t.casefold() for t in kept[intent]}
-            for j, text in enumerate(generated, start=1):
-                v = by_i.get(j)
-                if v and v.get("v") in ("ok", "fix"):
-                    t = (v.get("t") or text).strip()
-                    if t and t.casefold() not in seen and t.casefold() not in avoid:
-                        kept[intent].append(t)
-                        seen.add(t.casefold())
-                        topups += 1
+            topups += _top_up_intent(lang, intent, n, kept[intent], avoid)
         print(
             f"{lang} after top-up: "
             + ", ".join(f"{i}={len(t)}" for i, t in kept.items()),

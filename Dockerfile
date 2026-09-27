@@ -36,88 +36,20 @@ ARG HF_MODEL_REPO=eeahugs/query-intent-setfit-v1
 # (2026-09-18). Change only for a deliberately new model version.
 ARG HF_MODEL_REVISION=ba111788b58e4f1e0dafb3e74189f0a08d1e3186
 
-# Single install layer (S7031): PyPI is the primary index and the PyTorch
-# CPU mirror is an extra index. The torch pin carries the +cpu local
-# version tag, so it can only resolve from the CPU mirror - pip never
-# pulls the CUDA-bundled wheel (~2.5 GB). All 71 packages - the six
-# direct deps plus every transitive - are pinned to the exact versions
-# the CI build resolved (S8544, locked versions); pip still verifies the
-# full graph, so a stale pin fails the build loudly.
+# Runtime lockfile (S8544): every package is pinned exactly in this file,
+# which is the single source of truth for the image's dependencies.
+COPY runtime-requirements.txt /tmp/runtime-requirements.txt
+
+# Single install layer (S7031): install the locked file. PyPI is the
+# primary index and the PyTorch CPU mirror is an extra index; the torch
+# pin carries the +cpu local version tag, so it can only resolve from the
+# CPU mirror - pip never pulls the CUDA-bundled wheel (~2.5 GB). pip
+# still verifies the full graph, so a stale pin fails the build loudly.
 # --only-binary=:all: refuses sdist builds (no setup-script execution,
 # S8541).
 RUN pip install --no-cache-dir --only-binary=:all: \
-    accelerate==1.15.0 \
-    aiohappyeyeballs==2.7.1 \
-    aiohttp==3.14.3 \
-    aiosignal==1.4.0 \
-    annotated-doc==0.0.5 \
-    annotated-types==0.8.0 \
-    anyio==4.15.1 \
-    attrs==26.1.0 \
-    certifi==2026.7.22 \
-    charset-normalizer==3.5.1 \
-    click==8.5.0 \
-    cloudpickle==3.1.2 \
-    datasets==5.0.1 \
-    dill==0.4.1 \
-    evaluate==0.4.6 \
-    fastapi==0.141.1 \
-    filelock==3.32.3 \
-    frozenlist==1.8.0 \
-    fsspec==2026.6.0 \
-    h11==0.16.0 \
-    hf-xet==1.6.0 \
-    httpcore==1.0.9 \
-    httpx==0.28.1 \
-    huggingface-hub==1.30.0 \
-    idna==3.20 \
-    jinja2==3.1.6 \
-    joblib==1.6.0 \
-    markdown-it-py==4.2.0 \
-    markupsafe==3.0.3 \
-    mdurl==0.1.2 \
-    mpmath==1.3.0 \
-    multidict==6.9.1 \
-    multiprocess==0.70.19 \
-    narwhals==2.26.0 \
-    networkx==3.6.1 \
-    numpy==1.26.4 \
-    packaging==26.3 \
-    pandas==3.0.6 \
-    propcache==0.5.4 \
-    psutil==7.2.2 \
-    pyarrow==25.0.1 \
-    pydantic==2.13.5 \
-    pydantic-core==2.46.5 \
-    pygments==2.21.0 \
-    python-dateutil==2.9.0.post0 \
-    pyyaml==6.0.3 \
-    regex==2026.9.10 \
-    requests==2.34.2 \
-    rich==15.0.0 \
-    safetensors==0.8.0 \
-    scikit-learn==1.9.1 \
-    scipy==1.17.1 \
-    sentence-transformers==6.1.0 \
-    setfit==1.2.0 \
-    setuptools==78.1.0 \
-    shellingham==1.5.4 \
-    six==1.17.0 \
-    starlette==1.7.0 \
-    sympy==1.14.0 \
-    threadpoolctl==3.7.0 \
-    tokenizers==0.23.2 \
-    torch==2.14.0+cpu \
-    tqdm==4.70.1 \
-    transformers==5.17.0 \
-    typer==0.27.2 \
-    typing-extensions==4.16.0 \
-    typing-inspection==0.4.4 \
-    urllib3==2.8.0 \
-    uvicorn==0.52.4 \
-    xxhash==4.0.1 \
-    yarl==1.25.1 \
-    --extra-index-url https://download.pytorch.org/whl/cpu
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r /tmp/runtime-requirements.txt
 
 WORKDIR /app
 COPY src/ src/

@@ -366,14 +366,8 @@ def _pool_row(r: dict, lang: str, split: str) -> dict:
     }
 
 
-def _build_calibration(
-    drop_ids: set[str],
-    drop_texts: set[tuple[str, str]],
-    drop_sources: set[str],
-    manifest: dict,
-) -> None:
+def _cal_old_rows() -> tuple[list[dict], int, set[tuple[str, str]]]:
     cal_old = load(CALIB_OLD)
-    manifest["inputs"]["calibration-old"] = sha256_16(CALIB_OLD)
     seen_cal: set[tuple[str, str]] = set()
     cal_rows: list[dict] = []
     cal_dup = 0
@@ -398,28 +392,68 @@ def _build_calibration(
                 )
             }
         )
-    cal_pool_new = 0
-    cal_drop_decisions = 0
+    return cal_rows, cal_dup, seen_cal
+
+
+def _cal_pool_lang(
+    lang: str,
+    seen_cal: set[tuple[str, str]],
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+) -> tuple[list[dict], int, int]:
+    p = POOL / "calib" / f"{lang}.jsonl"
+    if not p.exists() and lang != "en":
+        raise SystemExit(f"missing calib pool: {p}")
+    src = p if p.exists() else POOL / "en_calib_short.jsonl"
+    if lang == "en" and not p.exists():
+        src = POOL / "en_calib_short.jsonl"
+    rows: list[dict] = []
+    dropped = 0
+    dupes = 0
+    for r in load(src):
+        if r["language"] != lang:
+            continue
+        if _row_dropped(r, lang, drop_ids, drop_texts, drop_sources):
+            dropped += 1
+            continue
+        key = (lang, r["text"].casefold())
+        if key in seen_cal:
+            dupes += 1
+            continue
+        seen_cal.add(key)
+        rows.append(_pool_row(r, lang, "calibration"))
+    return rows, dropped, dupes
+
+
+def _cal_pool_phase(
+    seen_cal: set[tuple[str, str]],
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+) -> tuple[list[dict], int, int, int]:
+    cal_rows: list[dict] = []
+    pool_new = 0
+    drop_decisions = 0
+    dupes = 0
     for lang in ALL_LANGS:
-        p = POOL / "calib" / f"{lang}.jsonl"
-        if not p.exists() and lang != "en":
-            raise SystemExit(f"missing calib pool: {p}")
-        src = p if p.exists() else POOL / "en_calib_short.jsonl"
-        if lang == "en" and not p.exists():
-            src = POOL / "en_calib_short.jsonl"
-        for r in load(src):
-            if r["language"] != lang:
-                continue
-            if _row_dropped(r, lang, drop_ids, drop_texts, drop_sources):
-                cal_drop_decisions += 1
-                continue
-            key = (lang, r["text"].casefold())
-            if key in seen_cal:
-                cal_dup += 1
-                continue
-            seen_cal.add(key)
-            cal_rows.append(_pool_row(r, lang, "calibration"))
-            cal_pool_new += 1
+        rows, dropped, dup = _cal_pool_lang(
+            lang, seen_cal, drop_ids, drop_texts, drop_sources
+        )
+        cal_rows.extend(rows)
+        pool_new += len(rows)
+        drop_decisions += dropped
+        dupes += dup
+    return cal_rows, pool_new, drop_decisions, dupes
+
+
+def _write_calibration(
+    cal_rows: list[dict],
+    cal_pool_new: int,
+    cal_dup: int,
+    cal_drop_decisions: int,
+    manifest: dict,
+) -> None:
     for r in cal_rows:
         r["text"] = r["text"].casefold()
         r["split"] = "calibration"
@@ -438,35 +472,54 @@ def _build_calibration(
     )
 
 
-def _build_exam(
+def _build_calibration(
     drop_ids: set[str],
     drop_texts: set[tuple[str, str]],
     drop_sources: set[str],
     manifest: dict,
 ) -> None:
-    exam_old = load(EXAM_V1)
-    manifest["inputs"]["exam-v1"] = sha256_16(EXAM_V1)
-    exam_rows = list(exam_old)
-    seen_exam = {(r["language"], r["text"].casefold()) for r in exam_old}
-    exam_new = 0
-    exam_drop_decisions = 0
-    for lang in ALL_LANGS:
-        p = POOL / "exam" / f"{lang}.jsonl"
-        if not p.exists() and lang != "en":
-            raise SystemExit(f"missing exam pool: {p}")
-        src = p if lang != "en" else POOL / "en_exam_short.jsonl"
-        for r in load(src):
-            if r["language"] != lang:
-                continue
-            if _row_dropped(r, lang, drop_ids, drop_texts, drop_sources):
-                exam_drop_decisions += 1
-                continue
-            key = (lang, r["text"].casefold())
-            if key in seen_exam:
-                continue
-            seen_exam.add(key)
-            exam_rows.append(_pool_row(r, lang, "test"))
-            exam_new += 1
+    manifest["inputs"]["calibration-old"] = sha256_16(CALIB_OLD)
+    cal_rows, cal_dup, seen_cal = _cal_old_rows()
+    pool_rows, cal_pool_new, cal_drop_decisions, pool_dupes = _cal_pool_phase(
+        seen_cal, drop_ids, drop_texts, drop_sources
+    )
+    cal_rows.extend(pool_rows)
+    cal_dup += pool_dupes
+    _write_calibration(cal_rows, cal_pool_new, cal_dup, cal_drop_decisions, manifest)
+
+
+def _exam_pool_lang(
+    lang: str,
+    exam_rows: list[dict],
+    seen_exam: set[tuple[str, str]],
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+) -> tuple[int, int]:
+    p = POOL / "exam" / f"{lang}.jsonl"
+    if not p.exists() and lang != "en":
+        raise SystemExit(f"missing exam pool: {p}")
+    src = p if lang != "en" else POOL / "en_exam_short.jsonl"
+    added = 0
+    dropped = 0
+    for r in load(src):
+        if r["language"] != lang:
+            continue
+        if _row_dropped(r, lang, drop_ids, drop_texts, drop_sources):
+            dropped += 1
+            continue
+        key = (lang, r["text"].casefold())
+        if key in seen_exam:
+            continue
+        seen_exam.add(key)
+        exam_rows.append(_pool_row(r, lang, "test"))
+        added += 1
+    return added, dropped
+
+
+def _write_exam(
+    exam_rows: list[dict], exam_new: int, exam_drop_decisions: int, manifest: dict
+) -> None:
     exam_path = EXAM_OUT / "test.jsonl"
     with exam_path.open("w", encoding="utf-8") as fh:
         for r in exam_rows:
@@ -492,6 +545,27 @@ def _build_exam(
     manifest["exam_drop_decisions"] = exam_drop_decisions
     manifest["exam_sha256_16"] = sha256_16(exam_path)
     print(f"exam: {exam_path} ({len(exam_rows)} rows, {exam_new} new)")
+
+
+def _build_exam(
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+    manifest: dict,
+) -> None:
+    manifest["inputs"]["exam-v1"] = sha256_16(EXAM_V1)
+    exam_old = load(EXAM_V1)
+    exam_rows = list(exam_old)
+    seen_exam = {(r["language"], r["text"].casefold()) for r in exam_old}
+    exam_new = 0
+    exam_drop_decisions = 0
+    for lang in ALL_LANGS:
+        added, dropped = _exam_pool_lang(
+            lang, exam_rows, seen_exam, drop_ids, drop_texts, drop_sources
+        )
+        exam_new += added
+        exam_drop_decisions += dropped
+    _write_exam(exam_rows, exam_new, exam_drop_decisions, manifest)
 
 
 def main() -> None:

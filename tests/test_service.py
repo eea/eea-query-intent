@@ -123,7 +123,7 @@ def test_eligible_probability_is_clamped() -> None:
             return "claim", 1.4
 
     result = classify_query("A claim.", ClampedAdapter(), 0.8)
-    assert result.eligible_probability == 1.0
+    assert result.eligible_probability == pytest.approx(1.0)
     assert result.eligible is True
 
 
@@ -140,7 +140,7 @@ def test_health_and_classify_endpoints(
     body = health.json()
     assert body["status"] == "ok"
     assert body["model_version"] == "fake-v1"
-    assert body["abstain_threshold"] == 0.8
+    assert body["abstain_threshold"] == pytest.approx(0.8)
 
     response = client.post("/v1/classify", json={"query": "What is the ozone layer?"})
     assert response.status_code == 200

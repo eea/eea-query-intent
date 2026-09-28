@@ -8,17 +8,14 @@ docker run --rm eea-query-intent-test:preflight sh -c '
     --cov-report=lcov:coverage/lcov.info \
     --cov-report=html:coverage/lcov-report \
     --cov-report=xml:coverage/cobertura-coverage.xml 2>&1 | tail -12
-  # Same strips the Jenkins Unit stage applies before sonar-scanner runs:
-  # drop the absolute-CWD <sources> element, then strip the src/ prefix
-  # from the class filenames (sonar.sources=./src resolves them from src/).
-  # NOTE: this whole block sits inside the outer single-quoted sh -c
-  # string, so only double quotes (escaped for the inner shell) are allowed.
+  # Same strip the Jenkins Unit stage applies before sonar-scanner runs.
+  # The filenames keep their src/ prefix: file keys are root-relative
+  # (src/eea_query_intent/...), so the report must match that shape.
   sed -i "/<sources>/,/<\\/sources>/d" coverage/cobertura-coverage.xml
-  sed -i "s|filename=\"src/|filename=\"|g" coverage/cobertura-coverage.xml
   echo "=== cobertura <sources> element (must be gone):"
   grep -c "<sources>" coverage/cobertura-coverage.xml || echo "0 (stripped)"
-  echo "=== leftover src/ prefixes (must be 0):"
-  grep -c "filename=\"src/" coverage/cobertura-coverage.xml || echo "0 (stripped)"
+  echo "=== cobertura filenames (must keep src/ prefix):"
+  grep -o "filename=\"[^\"]*\"" coverage/cobertura-coverage.xml | head -3
   echo "=== junit testcase count:"
   grep -c "<testcase" junit.xml || true
   echo "=== lcov SF lines:"

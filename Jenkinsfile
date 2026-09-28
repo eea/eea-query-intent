@@ -82,11 +82,10 @@ pipeline {
             // (/app) as an absolute path; the SonarQube python sensor cannot
             // resolve it from the agent workspace ("Invalid directory path in
             // 'source' element" -> 0% coverage on older sensor versions).
-            // Drop it, and strip the src/ prefix from the class filenames so
-            // they are relative to src/ - matching sonar.sources=./src -
-            // letting the sensor resolve them against the project base dir.
+            // Drop the element; the filenames stay root-relative
+            // (src/eea_query_intent/...), matching the file keys, so the
+            // sensor resolves them against the project base directory.
             sh '''sed -i '/<sources>/,/<\\/sources>/d' xunit-reports-current/coverage/cobertura-coverage.xml'''
-            sh '''sed -i 's|filename="src/|filename="|g' xunit-reports-current/coverage/cobertura-coverage.xml'''
             publishHTML(target : [
               allowMissing: false,
               alwaysLinkToLastBuild: true,
@@ -160,15 +159,18 @@ pipeline {
           def scannerHome = tool 'SonarQubeScanner'
           // Whole -D list precomputed here (house pattern) so the sh line
           // carries only explicit env.* interpolations.
-          // sonar.sources is ./src (only the service code is analyzed).
-          // The Cobertura filenames therefore must be relative to src/ -
-          // the Unit stage strips the src/ prefix after the docker cp.
+          // sonar.sources is ./src: only the service code is analyzed
+          // (ncloc ~800, scripts/Dockerfile/Jenkinsfile findings close on
+          // the next analysis). File paths, however, are still resolved
+          // against the project base directory (scanner CWD = repo root):
+          // the file keys are src/eea_query_intent/..., so the Cobertura
+          // filenames keep their src/ prefix and no rewriting is needed.
           env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=./src -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME}"
           withSonarQubeEnv('Sonarqube') {
             // Python coverage goes to sonar.python.coverage.reportPaths as
             // Cobertura XML (never the JS LCOV property). The filenames in
-            // it are stripped of their src/ prefix in the Unit stage so
-            // they resolve against sonar.sources=./src.
+            // it are root-relative (src/eea_query_intent/...), matching the
+            // file keys, so no path rewriting is needed here.
             sh "export PATH=${scannerHome}/bin:\$PATH; sonar-scanner ${env.sonarParams}"
           }
         }

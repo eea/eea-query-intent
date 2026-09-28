@@ -159,7 +159,11 @@ pipeline {
           def scannerHome = tool 'SonarQubeScanner'
           // Whole -D list precomputed here (house pattern) so the sh line
           // carries only explicit env.* interpolations.
-          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME} '-Dsonar.coverage.exclusions=scripts/**,tests/**' '-Dsonar.exclusions=scripts/translations/**'"
+          // sonar.sources must stay the repo root: the Cobertura paths are
+          // fully qualified (src/eea_query_intent/...) and resolve against
+          // sonar.sources, so ./src would break coverage (src/src/... miss).
+          // "Analyze only src/" is done with sonar.exclusions instead.
+          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME} '-Dsonar.coverage.exclusions=scripts/**,tests/**' '-Dsonar.exclusions=scripts/**,tests/**,docs/**,data/**,configs/**,Jenkinsfile,Dockerfile,Dockerfile.test,README.md,runtime-requirements.txt'"
           withSonarQubeEnv('Sonarqube') {
             // Python coverage goes to sonar.python.coverage.reportPaths as
             // Cobertura XML (never the JS LCOV property). sonar.sources is

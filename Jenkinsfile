@@ -28,7 +28,6 @@ pipeline {
       steps {
         script {
           env.BASE_VERSION = sh(script: "grep -m1 '^version' pyproject.toml | cut -d'\"' -f2", returnStdout: true).trim()
-          env.GIT_SHA_SHORT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
           // On a tag build the image tag is always the git tag itself,
           // unconditionally — a mismatch with pyproject.toml is a warning,
           // not a failure (v-prefix, pre-releases, delayed bumps).
@@ -226,8 +225,6 @@ pipeline {
             if [ "$BRANCH_NAME" = "$DEFAULT_BRANCH" ]; then
               docker tag "$RELEASE_IMAGE" "$DOCKERHUB_IMAGE:latest"
               docker push "$DOCKERHUB_IMAGE:latest"
-              docker tag "$RELEASE_IMAGE" "$DOCKERHUB_IMAGE:$GIT_SHA_SHORT"
-              docker push "$DOCKERHUB_IMAGE:$GIT_SHA_SHORT"
             fi
             docker logout
           '''

@@ -81,11 +81,12 @@ pipeline {
             // The Cobertura <sources> element carries the container CWD
             // (/app) as an absolute path; the SonarQube python sensor cannot
             // resolve it from the agent workspace ("Invalid directory path in
-            // 'source' element" -> 0% coverage on older sensor versions). The
-            // class filenames are already relative to the repo root, matching
-            // sonar.sources=., so drop the element and let the sensor resolve
-            // them against the project base directory.
+            // 'source' element" -> 0% coverage on older sensor versions).
+            // Drop it, and strip the src/ prefix from the class filenames so
+            // they are relative to src/ - matching sonar.sources=./src -
+            // letting the sensor resolve them against the project base dir.
             sh '''sed -i '/<sources>/,/<\\/sources>/d' xunit-reports-current/coverage/cobertura-coverage.xml'''
+            sh '''sed -i 's|filename="src/|filename="|g' xunit-reports-current/coverage/cobertura-coverage.xml'''
             publishHTML(target : [
               allowMissing: false,
               alwaysLinkToLastBuild: true,
@@ -159,19 +160,15 @@ pipeline {
           def scannerHome = tool 'SonarQubeScanner'
           // Whole -D list precomputed here (house pattern) so the sh line
           // carries only explicit env.* interpolations.
-          // sonar.sources must stay the repo root: the Cobertura paths are
-          // fully qualified (src/eea_query_intent/...) and resolve against
-          // sonar.sources, so ./src would break coverage (src/src/... miss).
-          // "Analyze only src/" is done with sonar.exclusions instead.
-          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME} '-Dsonar.coverage.exclusions=scripts/**,tests/**' '-Dsonar.exclusions=scripts/**,tests/**,docs/**,data/**,configs/**,Jenkinsfile,Dockerfile,Dockerfile.test,README.md,runtime-requirements.txt'"
+          // sonar.sources is ./src (only the service code is analyzed).
+          // The Cobertura filenames therefore must be relative to src/ -
+          // the Unit stage strips the src/ prefix after the docker cp.
+          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=./src -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME}"
           withSonarQubeEnv('Sonarqube') {
             // Python coverage goes to sonar.python.coverage.reportPaths as
-            // Cobertura XML (never the JS LCOV property). sonar.sources is
-            // the repo root so the fully-qualified coverage paths
-            // (src/eea_query_intent/...) resolve to real files.
-            // scripts/** is out of the coverage denominator (CI scripts
-            // never run under the unit tests), and scripts/translations
-            // (legacy v3 data modules) is excluded from analysis entirely.
+            // Cobertura XML (never the JS LCOV property). The filenames in
+            // it are stripped of their src/ prefix in the Unit stage so
+            // they resolve against sonar.sources=./src.
             sh "export PATH=${scannerHome}/bin:\$PATH; sonar-scanner ${env.sonarParams}"
           }
         }

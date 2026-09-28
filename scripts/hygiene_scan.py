@@ -101,20 +101,35 @@ def sha256_of(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 
 
+def _corpora_for(langs, suffix: str, tag: str) -> list[tuple[str, Path]]:
+    corpa: list[tuple[str, Path]] = []
+    for lang in langs:
+        p = V1 / f"{lang}{suffix}"
+        if p.exists():
+            corpa.append((f"v1/{lang}{tag}", p))
+    return corpa
+
+
+def _glob_corpora(
+    d: Path, pattern: str, prefix: str, per_subdir: bool
+) -> list[tuple[str, Path]]:
+    if not d.exists():
+        return []
+    corpa: list[tuple[str, Path]] = []
+    for p in sorted(d.glob(pattern)):
+        if per_subdir:
+            label = f"{prefix}/{p.parent.name}/{p.stem}"
+        else:
+            label = f"{prefix}/{p.stem}"
+        corpa.append((label, p))
+    return corpa
+
+
 def corpus_list() -> list[tuple[str, Path]]:
     corpa: list[tuple[str, Path]] = []
-    for lang in INHOUSE:
-        p = V1 / f"{lang}.jsonl"
-        if p.exists():
-            corpa.append((f"v1/{lang}", p))
-    for lang in GPT_RAW:
-        p = V1 / f"{lang}.raw.jsonl"
-        if p.exists():
-            corpa.append((f"v1/{lang}-raw", p))
-    for lang in ("sl", "sv"):
-        p = V1 / f"{lang}.jsonl"
-        if p.exists():
-            corpa.append((f"v1/{lang}-mt", p))
+    corpa += _corpora_for(INHOUSE, ".jsonl", "")
+    corpa += _corpora_for(GPT_RAW, ".raw.jsonl", "-raw")
+    corpa += _corpora_for(("sl", "sv"), ".jsonl", "-mt")
     cal = ROOT / "data" / "pilot" / "v1" / "calibration.jsonl"
     if cal.exists():
         corpa.append(("calibration", cal))
@@ -122,26 +137,13 @@ def corpus_list() -> list[tuple[str, Path]]:
     if mix.exists():
         corpa.append(("v1-mix", mix))
     bank_dir = ROOT / "data" / "banks" / "v1-short"
-    if bank_dir.exists():
-        for p in sorted(bank_dir.glob("*.jsonl")):
-            corpa.append((f"bank/{p.stem}", p))
+    corpa += _glob_corpora(bank_dir, "*.jsonl", "bank", per_subdir=False)
     pools_dir = ROOT / "data" / "pilot" / "v1-pools"
-    if pools_dir.exists():
-        for p in sorted(pools_dir.glob("*/*.jsonl")):
-            corpa.append((f"pool/{p.parent.name}/{p.stem}", p))
+    corpa += _glob_corpora(pools_dir, "*/*.jsonl", "pool", per_subdir=True)
     return corpa
 
 
-def check_row(
-    rec: dict,
-    lang: str | None,
-    exam_blocked: set[str],
-    en_by_id: dict[str, str],
-    flags_out: list[str],
-) -> None:
-    text = rec.get("text", "")
-    intent = rec.get("intent", "")
-
+def _basic_text_flags(text: str, flags_out: list[str]) -> None:
     if not text.strip():
         flags_out.append("empty")
         return
@@ -156,6 +158,10 @@ def check_row(
     if words > 20 or len(text) > 500:
         flags_out.append("too_long")
 
+
+def _script_flag(
+    text: str, lang: str | None, intent: str, flags_out: list[str]
+) -> None:
     if lang and intent != "unknown":
         expected = EXPECTED_SCRIPT.get(lang, "latin")
         letters = [ord(c) for c in text if c.isalpha()]
@@ -164,6 +170,10 @@ def check_row(
             if hits / len(letters) < 0.5:
                 flags_out.append("script_mismatch")
 
+
+def _qmark_flags(
+    text: str, intent: str, lang: str | None, flags_out: list[str]
+) -> None:
     last = text.rstrip()[-1:]
     qm = last in ("?", ";") if lang == "el" else text.rstrip().endswith("?")
     if qm and intent in ("retrieval", "unknown", "claim", "exploratory"):
@@ -171,15 +181,169 @@ def check_row(
     if intent == "question" and not qm:
         flags_out.append("unmarked_question")
 
-    folded = text.casefold()
+
+def _lineage_flags(
+    rec: dict,
+    folded: str,
+    exam_blocked: set[str],
+    en_by_id: dict[str, str],
+    flags_out: list[str],
+) -> None:
     if folded in exam_blocked:
         flags_out.append("exam_collision")
-
     source_id = rec.get("source_id")
     if source_id and source_id in en_by_id:
         src = en_by_id[source_id]
         if folded == src.strip().casefold() and len(folded.split()) >= 4:
             flags_out.append("mt_not_translated")
+
+
+def check_row(
+    rec: dict,
+    lang: str | None,
+    exam_blocked: set[str],
+    en_by_id: dict[str, str],
+    flags_out: list[str],
+) -> None:
+    text = rec.get("text", "")
+    intent = rec.get("intent", "")
+
+    _basic_text_flags(text, flags_out)
+    if not text.strip():
+        return
+    _script_flag(text, lang, intent, flags_out)
+    _qmark_flags(text, intent, lang, flags_out)
+
+    folded = text.casefold()
+    _lineage_flags(rec, folded, exam_blocked, en_by_id, flags_out)
+
+
+def _emit_flagged(
+    flagged,
+    name: str,
+    rid: str,
+    lang: str | None,
+    intent: str,
+    flags: list[str],
+    text: str,
+) -> None:
+    flagged.write(
+        json.dumps(
+            {
+                "corpus": name,
+                "id": rid,
+                "language": lang,
+                "intent": intent,
+                "flags": flags,
+                "text": text[:200],
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
+
+
+def _scan_row(
+    rec: dict,
+    name: str,
+    name_lang: str,
+    exam_blocked: set[str],
+    en_by_id: dict[str, str],
+    index: dict[str, list[tuple[str, str, str, str]]],
+    seen_local: dict[str, str],
+    counts: Counter[str],
+    flagged,
+) -> None:
+    text = rec.get("text", "").strip()
+    folded = text.casefold()
+    intent = rec.get("intent", "")
+    rid = rec.get("id", "?")
+    lang = rec.get("language") or name_lang
+    if lang and folded:
+        index[folded].append((name, lang, intent, rid))
+    flags: list[str] = []
+    check_row(rec, lang, exam_blocked, en_by_id, flags)
+    if folded and lang:
+        if folded in seen_local:
+            flags.append("dupe_intra")
+        else:
+            seen_local[folded] = rid
+    for f in flags:
+        counts[f] += 1
+    if flags:
+        _emit_flagged(flagged, name, rid, lang, intent, flags, text)
+
+
+def _scan_intra(
+    rows: list[dict],
+    name: str,
+    name_lang: str,
+    exam_blocked: set[str],
+    en_by_id: dict[str, str],
+    index: dict[str, list[tuple[str, str, str, str]]],
+    counts: Counter[str],
+    flagged,
+) -> None:
+    seen_local: dict[str, str] = {}
+    # first pass: index + intra-corpus checks
+    for rec in rows:
+        _scan_row(
+            rec,
+            name,
+            name_lang,
+            exam_blocked,
+            en_by_id,
+            index,
+            seen_local,
+            counts,
+            flagged,
+        )
+
+
+def _cross_corpus_flags(
+    folded: str,
+    name: str,
+    lang: str,
+    own_intent: str,
+    index: dict[str, list[tuple[str, str, str, str]]],
+) -> list[str]:
+    others = [e for e in index[folded] if e[0] != name]
+    extra: list[str] = []
+    if others:
+        langs = {e[1] for e in others if e[1]}
+        if langs - {lang}:
+            extra.append("dupe_xlang")
+    intents = {e[2] for e in index[folded] if e[1] == lang and e[2]}
+    if own_intent and intents - {own_intent}:
+        extra.append("label_conflict")
+    return extra
+
+
+def _scan_cross(
+    rows: list[dict],
+    name: str,
+    name_lang: str,
+    index: dict[str, list[tuple[str, str, str, str]]],
+    counts: Counter[str],
+    flagged,
+) -> None:
+    # second pass: cross-corpus duplicate + label conflict (needs full index)
+    for rec in rows:
+        text = rec.get("text", "").strip()
+        folded = text.casefold()
+        if not folded or len(folded.split()) <= 3:
+            continue
+        lang = rec.get("language") or name_lang
+        if not lang:
+            continue
+        own_intent = rec.get("intent", "")
+        extra = _cross_corpus_flags(folded, name, lang, own_intent, index)
+        if extra:
+            for f in set(extra):
+                counts[f] += 1
+            _emit_flagged(
+                flagged, name, rec.get("id", "?"), lang, own_intent, extra, text
+            )
 
 
 def main() -> int:
@@ -206,76 +370,10 @@ def main() -> int:
         rows = load_rows(path)
         name_lang = name.split("/")[-1].split("-")[0]
         counts: Counter[str] = Counter()
-        seen_local: dict[str, str] = {}
-        # first pass: index + intra-corpus checks
-        for rec in rows:
-            text = rec.get("text", "").strip()
-            folded = text.casefold()
-            intent = rec.get("intent", "")
-            rid = rec.get("id", "?")
-            lang = rec.get("language") or name_lang
-            if lang and folded:
-                index[folded].append((name, lang, intent, rid))
-            flags: list[str] = []
-            check_row(rec, lang, exam_blocked, en_by_id, flags)
-            if folded and lang:
-                if folded in seen_local:
-                    flags.append("dupe_intra")
-                else:
-                    seen_local[folded] = rid
-            for f in flags:
-                counts[f] += 1
-            if flags:
-                flagged.write(
-                    json.dumps(
-                        {
-                            "corpus": name,
-                            "id": rid,
-                            "language": lang,
-                            "intent": intent,
-                            "flags": flags,
-                            "text": text[:200],
-                        },
-                        ensure_ascii=False,
-                    )
-                    + "\n"
-                )
-        # second pass: cross-corpus duplicate + label conflict (needs full index)
-        for rec in rows:
-            text = rec.get("text", "").strip()
-            folded = text.casefold()
-            if not folded or len(folded.split()) <= 3:
-                continue
-            lang = rec.get("language") or name_lang
-            if not lang:
-                continue
-            others = [e for e in index[folded] if e[0] != name]
-            extra: list[str] = []
-            if others:
-                langs = {e[1] for e in others if e[1]}
-                if langs - {lang}:
-                    extra.append("dupe_xlang")
-            intents = {e[2] for e in index[folded] if e[1] == lang and e[2]}
-            own_intent = rec.get("intent", "")
-            if own_intent and intents - {own_intent}:
-                extra.append("label_conflict")
-            if extra:
-                for f in set(extra):
-                    counts[f] += 1
-                flagged.write(
-                    json.dumps(
-                        {
-                            "corpus": name,
-                            "id": rec.get("id", "?"),
-                            "language": lang,
-                            "intent": own_intent,
-                            "flags": extra,
-                            "text": text[:200],
-                        },
-                        ensure_ascii=False,
-                    )
-                    + "\n"
-                )
+        _scan_intra(
+            rows, name, name_lang, exam_blocked, en_by_id, index, counts, flagged
+        )
+        _scan_cross(rows, name, name_lang, index, counts, flagged)
         report[name] = {
             "rows": len(rows),
             "sha256_16": sha256_of(path),

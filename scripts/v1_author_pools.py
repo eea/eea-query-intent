@@ -237,7 +237,7 @@ CALIB_C = [
 ]
 
 
-def check(texts: list[str], where: str) -> None:
+def check(texts: list[str], where: str) -> set[str]:
     seen: set[str] = set()
     for t in texts:
         w = len(t.split())

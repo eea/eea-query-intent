@@ -1,3 +1,11 @@
+# Shared ignore file for BOTH the release image (Dockerfile) and the test
+# image (Dockerfile.test). Per-Dockerfile ignore files (Dockerfile.testignore)
+# did not take effect on this toolchain, so this one file must satisfy both:
+# - tests/ and scripts/ are KEPT: the test image needs them (pytest + ruff
+#   lint). They are harmless in the release context — the release Dockerfile
+#   only COPYs src/ — so the context just carries ~1 MB extra.
+# - data/ and models/ are excluded for both: the release image fetches the
+#   model from Hugging Face at build time and the tests use a fake adapter.
 .git
 .venv
 .ruff_cache
@@ -7,9 +15,7 @@ data/
 models/
 reports/
 docs/
-tests/
-scripts/
-*.md
 Dockerfile
+Dockerfile.test
 .dockerignore
 HANDOFF.md

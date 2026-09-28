@@ -154,6 +154,20 @@ def has_mark(text: str, lang: str) -> bool:
     return t[-1] in ("?", ";") if lang == "el" else t.endswith("?")
 
 
+def _apply_drop_record(
+    rec: dict,
+    by_id: set[str],
+    by_text: set[tuple[str, str]],
+    by_source: set[str],
+) -> None:
+    if rec.get("id"):
+        by_id.add(rec["id"])
+    if rec.get("source_id"):
+        by_source.add(rec["source_id"])
+    if rec.get("language") and rec.get("text"):
+        by_text.add((rec["language"], rec["text"].casefold()))
+
+
 def load_drop_decisions() -> tuple[set[str], set[tuple[str, str]], set[str]]:
     """Adjudicated rows to exclude (Gemma flags + assistant review).
 
@@ -166,73 +180,38 @@ def load_drop_decisions() -> tuple[set[str], set[tuple[str, str]], set[str]]:
     by_source: set[str] = set()
     if DROP_DECISIONS.exists():
         for line in DROP_DECISIONS.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            rec = json.loads(line)
-            if rec.get("id"):
-                by_id.add(rec["id"])
-            if rec.get("source_id"):
-                by_source.add(rec["source_id"])
-            if rec.get("language") and rec.get("text"):
-                by_text.add((rec["language"], rec["text"].casefold()))
+            if line.strip():
+                _apply_drop_record(json.loads(line), by_id, by_text, by_source)
     return by_id, by_text, by_source
 
 
-def main() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
-    EXAM_OUT.mkdir(parents=True, exist_ok=True)
+def _row_dropped(
+    rec: dict,
+    lang: str,
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+) -> bool:
+    return (
+        rec.get("id") in drop_ids
+        or rec.get("source_id") in drop_sources
+        or (lang, rec["text"].casefold()) in drop_texts
+    )
 
-    drop_ids, drop_texts, drop_sources = load_drop_decisions()
-    manifest: dict = {"inputs": {}, "strata": {}, "resolutions": []}
-    manifest["drop_decisions"] = {
-        "by_id": len(drop_ids),
-        "by_text": len(drop_texts),
-        "by_source": len(drop_sources),
-    }
 
-    def is_dropped(rec: dict, lang: str, text: str) -> bool:
-        return (
-            rec.get("id") in drop_ids
-            or rec.get("source_id") in drop_sources
-            or (lang, text.casefold()) in drop_texts
-        )
-
-    def add(stratum: str, lang: str, path: Path, rows: list[dict], note: str = ""):
-        manifest["inputs"][f"{stratum}/{lang}/{path.name}"] = sha256_16(path)
-        manifest["strata"].setdefault(stratum, Counter())[lang] += len(rows)
-        print(f"  {stratum:3} {lang:3} {path.name:28} {len(rows):6} {note}")
-
-    # ------------------------------------------------------------ strata A: in-house
-    print("stratum A: in-house native corpora")
-    rows_a: list[dict] = []
-    for lang in INHOUSE:
-        p = V1 / f"{lang}.jsonl"
+def _collect_stratum(
+    stratum: str, dir_path: Path, suffix: str, langs, add
+) -> list[dict]:
+    rows: list[dict] = []
+    for lang in langs:
+        p = dir_path / f"{lang}{suffix}"
         rs = load(p)
-        add("A", lang, p, rs)
-        rows_a.extend(normalize(r, "A") for r in rs)
+        add(stratum, lang, p, rs)
+        rows.extend(normalize(r, stratum) for r in rs)
+    return rows
 
-    # ------------------------------------------------ stratum B: GPT native raw
-    print("stratum B: GPT-native raw corpora (hygiene-QA'd this iteration)")
-    rows_b: list[dict] = []
-    for lang in GPT_NATIVE:
-        p = V1 / f"{lang}.raw.jsonl"
-        rs = load(p)
-        add("B", lang, p, rs)
-        rows_b.extend(normalize(r, "B") for r in rs)
 
-    # ------------------------------------------------------------ stratum C: MT sl/sv
-    print("stratum C: NLLB machine translation")
-    rows_c: list[dict] = []
-    for lang in MT:
-        p = V1 / f"{lang}.jsonl"
-        if not p.exists():
-            raise SystemExit(f"missing MT corpus: {p}")
-        rs = load(p)
-        add("C", lang, p, rs)
-        rows_c.extend(normalize(r, "C") for r in rs)
-
-    # ------------------------------------------------------------ stratum C2: legacy v3
-    print("stratum C2: legacy v3 rows (retention-filtered)")
+def _load_legacy(manifest: dict) -> list[dict]:
     legacy_paths = sorted(LEGACY_DIR.glob("legacy_*.jsonl"))
     if len(legacy_paths) != len(LEGACY_LANGS):
         raise SystemExit(f"expected {len(LEGACY_LANGS)} legacy files in {LEGACY_DIR}")
@@ -254,25 +233,35 @@ def main() -> None:
         f"  C2  legacy rows: {len(legacy)} -> kept {len(kept_c2)} "
         f"(dropped {dict(dropped_c2)})"
     )
-    rows_c2 = kept_c2
+    return kept_c2
 
-    # ------------------------------------------------------------ stratum E: short bank
-    print("stratum E: short-question bank (170 rows/language)")
-    rows_e: list[dict] = []
-    for lang in ALL_LANGS:
-        p = BANK / f"{lang}.jsonl"
-        rs = load(p)
-        add("E", lang, p, rs)
-        rows_e.extend(normalize(r, "E") for r in rs)
 
-    # ------------------------------------------------------------ dedup + conflicts
-    def dropped(r: dict) -> bool:
-        return is_dropped(r, r["language"], r["text"])
+def _pick_conflict_kept(key: tuple[str, str], group: list[dict]) -> tuple[dict, dict]:
+    lang = key[0]
+    text_cf = key[1]
+    intents = {r["intent"] for r in group}
+    marked = text_cf.endswith("?") or (lang == "el" and text_cf.endswith(";"))
+    if marked:
+        wanted = "question"
+    else:
+        wanted = None
+        for cand in ("retrieval", "exploratory", "claim"):
+            if cand in intents:
+                wanted = cand
+                break
+    same = [r for r in group if r["intent"] == wanted]
+    kept = same[0] if same else group[0]
+    resolution = {
+        "language": lang,
+        "text": text_cf[:120],
+        "intents": sorted(intents),
+        "kept": kept["intent"],
+        "kept_id": kept["id"],
+    }
+    return kept, resolution
 
-    all_strata = rows_a + rows_b + rows_c + rows_c2 + rows_e
-    all_rows = [r for r in all_strata if not dropped(r)]
-    manifest["drop_decisions_applied"] = len(all_strata) - len(all_rows)
-    all_rows.sort(key=lambda r: STRATUM_PRIORITY[r["stratum"]])
+
+def _dedup_conflicts(all_rows: list[dict], manifest: dict) -> list[dict]:
     groups: dict[tuple[str, str], list[dict]] = {}
     order: list[tuple[str, str]] = []
     for r in all_rows:
@@ -297,39 +286,21 @@ def main() -> None:
             chosen.append(group[0])
             dedup_dropped += len(group) - 1
             continue
-        lang = key[0]
-        text_cf = key[1]
-        marked = text_cf.endswith("?") or (lang == "el" and text_cf.endswith(";"))
-        if marked:
-            wanted = "question"
-        else:
-            wanted = None
-            for cand in ("retrieval", "exploratory", "claim"):
-                if cand in intents:
-                    wanted = cand
-                    break
-        same = [r for r in group if r["intent"] == wanted]
-        kept = same[0] if same else group[0]
+        kept, resolution = _pick_conflict_kept(key, group)
         conflict_resolved += 1
         dedup_dropped += len(group) - 1
         chosen.append(kept)
-        manifest["resolutions"].append(
-            {
-                "language": lang,
-                "text": text_cf[:120],
-                "intents": sorted(intents),
-                "kept": kept["intent"],
-                "kept_id": kept["id"],
-            }
-        )
+        manifest["resolutions"].append(resolution)
     manifest["dedup_dropped"] = dedup_dropped
     manifest["conflicts_resolved"] = conflict_resolved
     print(
         f"dedup+conflict: {len(all_rows)} -> {len(chosen)} "
         f"(dropped {dedup_dropped}, conflicts resolved {conflict_resolved})"
     )
+    return chosen
 
-    # ------------------------------------------------------------ de-marking
+
+def _demark_questions(chosen: list[dict]) -> tuple[int, int]:
     marked_q: dict[str, list[dict]] = {}
     for r in chosen:
         if r["intent"] == "question" and has_mark(r["text"], r["language"]):
@@ -345,11 +316,10 @@ def main() -> None:
                 if r["text"].endswith(("?", ";")):
                     r["text"] = r["text"][:-1].rstrip()
                 demarked += 1
-    manifest["demarked"] = demarked
-    manifest["kept_marked"] = kept_marked
-    print(f"de-marking: {demarked} stripped, {kept_marked} kept (every 4th)")
+    return demarked, kept_marked
 
-    # ------------------------------------------------------------ lowercase + write mix
+
+def _write_mix(chosen: list[dict], manifest: dict) -> None:
     for r in chosen:
         r["text"] = r["text"].casefold()
     mix_path = OUT / "train.jsonl"
@@ -380,10 +350,25 @@ def main() -> None:
     manifest["mix_per_class"] = dict(sorted(per_class.items()))
     print(f"mix: {mix_path} ({len(chosen)} rows)")
 
-    # ------------------------------------------------------------ calibration
+
+def _pool_row(r: dict, lang: str, split: str) -> dict:
+    return {
+        "id": r["id"],
+        "intent": r["intent"],
+        "language": lang,
+        "text": r["text"],
+        "template_id": r.get("template_id") or r["id"],
+        "source_type": CONTRACT_SOURCE.get(
+            r.get("source_type", ""), "synthetic_generated"
+        ),
+        "review_status": "llm_reviewed",
+        "split": split,
+    }
+
+
+def _cal_old_rows() -> tuple[list[dict], int, set[tuple[str, str]]]:
     cal_old = load(CALIB_OLD)
-    manifest["inputs"]["calibration-old"] = sha256_16(CALIB_OLD)
-    seen_cal: set[str] = set()
+    seen_cal: set[tuple[str, str]] = set()
     cal_rows: list[dict] = []
     cal_dup = 0
     for r in cal_old:
@@ -407,41 +392,68 @@ def main() -> None:
                 )
             }
         )
-    cal_pool_new = 0
-    cal_drop_decisions = 0
+    return cal_rows, cal_dup, seen_cal
+
+
+def _cal_pool_lang(
+    lang: str,
+    seen_cal: set[tuple[str, str]],
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+) -> tuple[list[dict], int, int]:
+    p = POOL / "calib" / f"{lang}.jsonl"
+    if not p.exists() and lang != "en":
+        raise SystemExit(f"missing calib pool: {p}")
+    src = p if p.exists() else POOL / "en_calib_short.jsonl"
+    if lang == "en" and not p.exists():
+        src = POOL / "en_calib_short.jsonl"
+    rows: list[dict] = []
+    dropped = 0
+    dupes = 0
+    for r in load(src):
+        if r["language"] != lang:
+            continue
+        if _row_dropped(r, lang, drop_ids, drop_texts, drop_sources):
+            dropped += 1
+            continue
+        key = (lang, r["text"].casefold())
+        if key in seen_cal:
+            dupes += 1
+            continue
+        seen_cal.add(key)
+        rows.append(_pool_row(r, lang, "calibration"))
+    return rows, dropped, dupes
+
+
+def _cal_pool_phase(
+    seen_cal: set[tuple[str, str]],
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+) -> tuple[list[dict], int, int, int]:
+    cal_rows: list[dict] = []
+    pool_new = 0
+    drop_decisions = 0
+    dupes = 0
     for lang in ALL_LANGS:
-        p = POOL / "calib" / f"{lang}.jsonl"
-        if not p.exists() and lang != "en":
-            raise SystemExit(f"missing calib pool: {p}")
-        src = p if p.exists() else POOL / "en_calib_short.jsonl"
-        if lang == "en" and not p.exists():
-            src = POOL / "en_calib_short.jsonl"
-        for r in load(src):
-            if r["language"] != lang:
-                continue
-            if is_dropped(r, lang, r["text"]):
-                cal_drop_decisions += 1
-                continue
-            key = (lang, r["text"].casefold())
-            if key in seen_cal:
-                cal_dup += 1
-                continue
-            seen_cal.add(key)
-            cal_rows.append(
-                {
-                    "id": r["id"],
-                    "intent": r["intent"],
-                    "language": lang,
-                    "text": r["text"],
-                    "template_id": r.get("template_id") or r["id"],
-                    "source_type": CONTRACT_SOURCE.get(
-                        r.get("source_type", ""), "synthetic_generated"
-                    ),
-                    "review_status": "llm_reviewed",
-                    "split": "calibration",
-                }
-            )
-            cal_pool_new += 1
+        rows, dropped, dup = _cal_pool_lang(
+            lang, seen_cal, drop_ids, drop_texts, drop_sources
+        )
+        cal_rows.extend(rows)
+        pool_new += len(rows)
+        drop_decisions += dropped
+        dupes += dup
+    return cal_rows, pool_new, drop_decisions, dupes
+
+
+def _write_calibration(
+    cal_rows: list[dict],
+    cal_pool_new: int,
+    cal_dup: int,
+    cal_drop_decisions: int,
+    manifest: dict,
+) -> None:
     for r in cal_rows:
         r["text"] = r["text"].casefold()
         r["split"] = "calibration"
@@ -459,42 +471,55 @@ def main() -> None:
         f"new pool {cal_pool_new}, dedup dropped {cal_dup})"
     )
 
-    # ------------------------------------------------------------ canonical exam
-    exam_old = load(EXAM_V1)
-    manifest["inputs"]["exam-v1"] = sha256_16(EXAM_V1)
-    exam_rows = list(exam_old)
-    seen_exam = {(r["language"], r["text"].casefold()) for r in exam_old}
-    exam_new = 0
-    exam_drop_decisions = 0
-    for lang in ALL_LANGS:
-        p = POOL / "exam" / f"{lang}.jsonl"
-        if not p.exists() and lang != "en":
-            raise SystemExit(f"missing exam pool: {p}")
-        src = p if lang != "en" else POOL / "en_exam_short.jsonl"
-        for r in load(src):
-            if r["language"] != lang:
-                continue
-            if is_dropped(r, lang, r["text"]):
-                exam_drop_decisions += 1
-                continue
-            key = (lang, r["text"].casefold())
-            if key in seen_exam:
-                continue
-            seen_exam.add(key)
-            out = {
-                "id": r["id"],
-                "intent": r["intent"],
-                "language": lang,
-                "text": r["text"],
-                "template_id": r.get("template_id") or r["id"],
-                "source_type": CONTRACT_SOURCE.get(
-                    r.get("source_type", ""), "synthetic_generated"
-                ),
-                "review_status": "llm_reviewed",
-                "split": "test",
-            }
-            exam_rows.append(out)
-            exam_new += 1
+
+def _build_calibration(
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+    manifest: dict,
+) -> None:
+    manifest["inputs"]["calibration-old"] = sha256_16(CALIB_OLD)
+    cal_rows, cal_dup, seen_cal = _cal_old_rows()
+    pool_rows, cal_pool_new, cal_drop_decisions, pool_dupes = _cal_pool_phase(
+        seen_cal, drop_ids, drop_texts, drop_sources
+    )
+    cal_rows.extend(pool_rows)
+    cal_dup += pool_dupes
+    _write_calibration(cal_rows, cal_pool_new, cal_dup, cal_drop_decisions, manifest)
+
+
+def _exam_pool_lang(
+    lang: str,
+    exam_rows: list[dict],
+    seen_exam: set[tuple[str, str]],
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+) -> tuple[int, int]:
+    p = POOL / "exam" / f"{lang}.jsonl"
+    if not p.exists() and lang != "en":
+        raise SystemExit(f"missing exam pool: {p}")
+    src = p if lang != "en" else POOL / "en_exam_short.jsonl"
+    added = 0
+    dropped = 0
+    for r in load(src):
+        if r["language"] != lang:
+            continue
+        if _row_dropped(r, lang, drop_ids, drop_texts, drop_sources):
+            dropped += 1
+            continue
+        key = (lang, r["text"].casefold())
+        if key in seen_exam:
+            continue
+        seen_exam.add(key)
+        exam_rows.append(_pool_row(r, lang, "test"))
+        added += 1
+    return added, dropped
+
+
+def _write_exam(
+    exam_rows: list[dict], exam_new: int, exam_drop_decisions: int, manifest: dict
+) -> None:
     exam_path = EXAM_OUT / "test.jsonl"
     with exam_path.open("w", encoding="utf-8") as fh:
         for r in exam_rows:
@@ -520,6 +545,98 @@ def main() -> None:
     manifest["exam_drop_decisions"] = exam_drop_decisions
     manifest["exam_sha256_16"] = sha256_16(exam_path)
     print(f"exam: {exam_path} ({len(exam_rows)} rows, {exam_new} new)")
+
+
+def _build_exam(
+    drop_ids: set[str],
+    drop_texts: set[tuple[str, str]],
+    drop_sources: set[str],
+    manifest: dict,
+) -> None:
+    manifest["inputs"]["exam-v1"] = sha256_16(EXAM_V1)
+    exam_old = load(EXAM_V1)
+    exam_rows = list(exam_old)
+    seen_exam = {(r["language"], r["text"].casefold()) for r in exam_old}
+    exam_new = 0
+    exam_drop_decisions = 0
+    for lang in ALL_LANGS:
+        added, dropped = _exam_pool_lang(
+            lang, exam_rows, seen_exam, drop_ids, drop_texts, drop_sources
+        )
+        exam_new += added
+        exam_drop_decisions += dropped
+    _write_exam(exam_rows, exam_new, exam_drop_decisions, manifest)
+
+
+def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    EXAM_OUT.mkdir(parents=True, exist_ok=True)
+
+    drop_ids, drop_texts, drop_sources = load_drop_decisions()
+    manifest: dict = {"inputs": {}, "strata": {}, "resolutions": []}
+    manifest["drop_decisions"] = {
+        "by_id": len(drop_ids),
+        "by_text": len(drop_texts),
+        "by_source": len(drop_sources),
+    }
+
+    def add(stratum: str, lang: str, path: Path, rows: list[dict], note: str = ""):
+        manifest["inputs"][f"{stratum}/{lang}/{path.name}"] = sha256_16(path)
+        manifest["strata"].setdefault(stratum, Counter())[lang] += len(rows)
+        print(f"  {stratum:3} {lang:3} {path.name:28} {len(rows):6} {note}")
+
+    # ------------------------------------------------------------ strata A: in-house
+    print("stratum A: in-house native corpora")
+    rows_a = _collect_stratum("A", V1, ".jsonl", INHOUSE, add)
+
+    # ------------------------------------------------ stratum B: GPT native raw
+    print("stratum B: GPT-native raw corpora (hygiene-QA'd this iteration)")
+    rows_b = _collect_stratum("B", V1, ".raw.jsonl", GPT_NATIVE, add)
+
+    # ------------------------------------------------------------ stratum C: MT sl/sv
+    print("stratum C: NLLB machine translation")
+    rows_c: list[dict] = []
+    for lang in MT:
+        p = V1 / f"{lang}.jsonl"
+        if not p.exists():
+            raise SystemExit(f"missing MT corpus: {p}")
+        rs = load(p)
+        add("C", lang, p, rs)
+        rows_c.extend(normalize(r, "C") for r in rs)
+
+    # ------------------------------------------------------------ stratum C2: legacy v3
+    print("stratum C2: legacy v3 rows (retention-filtered)")
+    rows_c2 = _load_legacy(manifest)
+
+    # ------------------------------------------------------------ stratum E: short bank
+    print("stratum E: short-question bank (170 rows/language)")
+    rows_e = _collect_stratum("E", BANK, ".jsonl", ALL_LANGS, add)
+
+    # ------------------------------------------------------------ dedup + conflicts
+    all_strata = rows_a + rows_b + rows_c + rows_c2 + rows_e
+    all_rows = [
+        r
+        for r in all_strata
+        if not _row_dropped(r, r["language"], drop_ids, drop_texts, drop_sources)
+    ]
+    manifest["drop_decisions_applied"] = len(all_strata) - len(all_rows)
+    all_rows.sort(key=lambda r: STRATUM_PRIORITY[r["stratum"]])
+    chosen = _dedup_conflicts(all_rows, manifest)
+
+    # ------------------------------------------------------------ de-marking
+    demarked, kept_marked = _demark_questions(chosen)
+    manifest["demarked"] = demarked
+    manifest["kept_marked"] = kept_marked
+    print(f"de-marking: {demarked} stripped, {kept_marked} kept (every 4th)")
+
+    # ------------------------------------------------------------ lowercase + write mix
+    _write_mix(chosen, manifest)
+
+    # ------------------------------------------------------------ calibration
+    _build_calibration(drop_ids, drop_texts, drop_sources, manifest)
+
+    # ------------------------------------------------------------ canonical exam
+    _build_exam(drop_ids, drop_texts, drop_sources, manifest)
 
     manifest_path = OUT / "manifest.json"
     manifest_path.write_text(

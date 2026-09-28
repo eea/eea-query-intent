@@ -14,6 +14,7 @@ eea-query-intent = "eea_query_intent.cli:main"
 [dependency-groups]
 dev = [
   "pytest>=8.3,<10",
+  "pytest-cov>=6,<7",
   "ruff>=0.9,<1",
 ]
 ml = [
@@ -33,6 +34,17 @@ build-backend = "uv_build"
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+# Single CWD root (uv run pytest --cov=.) plus explicit source so every
+# report format (Cobertura, LCOV, HTML) carries fully-qualified paths like
+# src/eea_query_intent/cli.py — bare per-root filenames would make the
+# SonarQube python sensor unable to map coverage back to source files.
+source = ["src/eea_query_intent"]
+omit = [
+  "tests/*",
+  "scripts/*",
+]
 
 [tool.ruff]
 line-length = 88

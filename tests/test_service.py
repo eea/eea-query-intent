@@ -42,6 +42,34 @@ def manifest(tmp_path: Path) -> dict:
     return manifest
 
 
+def _client_with_fake_adapter(
+    monkeypatch,
+    manifest: dict,
+    adapter,
+    *,
+    model_path: str | None = None,
+):
+    """Build the app with a stubbed adapter load; optionally point the
+    model env vars at a temp path (as the real service would receive
+    them)."""
+    from fastapi.testclient import TestClient
+
+    import eea_query_intent.service as service_module
+
+    if model_path is not None:
+        monkeypatch.setenv("EEA_QI_MODEL_TYPE", "fake")
+        monkeypatch.setenv("EEA_QI_MODEL_PATH", model_path)
+        monkeypatch.setenv(
+            "EEA_QI_ABSTAIN_THRESHOLD", str(manifest["abstain_threshold"])
+        )
+    monkeypatch.setattr(
+        service_module,
+        "load_adapter",
+        lambda model_path, device: (adapter, manifest),
+    )
+    return TestClient(create_app())
+
+
 def test_policy_guard_empty_skips_the_model() -> None:
     adapter = FakeAdapter("question", 0.99)
     result = classify_query("   ", adapter, 0.8)
@@ -95,37 +123,24 @@ def test_eligible_probability_is_clamped() -> None:
             return "claim", 1.4
 
     result = classify_query("A claim.", ClampedAdapter(), 0.8)
-    assert result.eligible_probability == 1.0
+    assert result.eligible_probability == pytest.approx(1.0)
     assert result.eligible is True
 
 
 def test_health_and_classify_endpoints(
     monkeypatch, manifest: dict, tmp_path: Path
 ) -> None:
-    from fastapi.testclient import TestClient
-
     adapter = FakeAdapter("question", 0.99)
-    monkeypatch.setenv("EEA_QI_MODEL_TYPE", "fake")
-    monkeypatch.setenv("EEA_QI_MODEL_PATH", str(tmp_path))
-    monkeypatch.setenv("EEA_QI_ABSTAIN_THRESHOLD", str(manifest["abstain_threshold"]))
-    import eea_query_intent.service as service_module
-
-    monkeypatch.setattr(
-        service_module,
-        "load_adapter",
-        lambda model_path, device: (
-            adapter,
-            manifest,
-        ),
+    client = _client_with_fake_adapter(
+        monkeypatch, manifest, adapter, model_path=str(tmp_path)
     )
 
-    client = TestClient(create_app())
     health = client.get("/health")
     assert health.status_code == 200
     body = health.json()
     assert body["status"] == "ok"
     assert body["model_version"] == "fake-v1"
-    assert body["abstain_threshold"] == 0.8
+    assert body["abstain_threshold"] == pytest.approx(0.8)
 
     response = client.post("/v1/classify", json={"query": "What is the ozone layer?"})
     assert response.status_code == 200
@@ -142,17 +157,8 @@ def test_health_and_classify_endpoints(
 def test_policy_guard_reasons_come_from_the_endpoint(
     monkeypatch, manifest: dict
 ) -> None:
-    from fastapi.testclient import TestClient
-
     adapter = FakeAdapter("question", 0.99)
-    import eea_query_intent.service as service_module
-
-    monkeypatch.setattr(
-        service_module,
-        "load_adapter",
-        lambda model_path, device: (adapter, manifest),
-    )
-    client = TestClient(create_app())
+    client = _client_with_fake_adapter(monkeypatch, manifest, adapter)
 
     empty = client.post("/v1/classify", json={"query": ""})
     assert empty.status_code == 200
@@ -161,19 +167,7 @@ def test_policy_guard_reasons_come_from_the_endpoint(
 
 
 def test_adapter_error_returns_503_fail_closed(monkeypatch, manifest: dict) -> None:
-    from fastapi.testclient import TestClient
-
-    import eea_query_intent.service as service_module
-
-    monkeypatch.setattr(
-        service_module,
-        "load_adapter",
-        lambda model_path, device: (
-            ExplodingAdapter(),
-            manifest,
-        ),
-    )
-    client = TestClient(create_app())
+    client = _client_with_fake_adapter(monkeypatch, manifest, ExplodingAdapter())
     response = client.post("/v1/classify", json={"query": "What is the ozone layer?"})
     assert response.status_code == 503
     assert response.json()["error"] == "classifier unavailable"

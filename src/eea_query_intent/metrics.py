@@ -36,19 +36,7 @@ class PredictionRecord:
 
     @classmethod
     def from_mapping(cls, row: dict[str, Any]) -> PredictionRecord:
-        required = (
-            "id",
-            "intent",
-            "eligible",
-            "eligible_probability",
-            "confidence",
-            "abstained",
-            "model_version",
-            "latency_ms",
-        )
-        for field in required:
-            if field not in row:
-                raise PredictionValidationError(f"missing prediction field '{field}'")
+        _require_prediction_keys(row)
 
         record_id = row["id"]
         intent = row["intent"]
@@ -67,30 +55,14 @@ class PredictionRecord:
             raise PredictionValidationError("'eligible' must be a boolean")
         if not isinstance(abstained, bool):
             raise PredictionValidationError("'abstained' must be a boolean")
-        for field_name, value in (
-            ("eligible_probability", probability),
-            ("confidence", confidence),
-            ("latency_ms", row["latency_ms"]),
-        ):
-            if (
-                isinstance(value, bool)
-                or not isinstance(value, (int, float))
-                or value < 0
-            ):
-                raise PredictionValidationError(
-                    f"'{field_name}' must be a non-negative number"
-                )
+        for field_name in ("eligible_probability", "confidence", "latency_ms"):
+            _require_non_negative_number(row, field_name)
         if not 0.0 <= probability <= 1.0:
             raise PredictionValidationError(
                 "'eligible_probability' must be between 0 and 1"
             )
 
-        if intent in BINARY_LABELS:
-            # binary head: the predicted label IS the routing decision
-            expected_eligible = intent == "eligible" and not abstained
-        else:
-            expected_eligible = intent in ELIGIBLE_INTENTS and not abstained
-        if eligible != expected_eligible:
+        if eligible != _expected_eligible(intent, abstained):
             raise PredictionValidationError(
                 f"prediction '{record_id}': 'eligible' must agree with "
                 f"intent '{intent}' and abstention"
@@ -106,6 +78,38 @@ class PredictionRecord:
             model_version=str(row["model_version"]),
             latency_ms=float(row["latency_ms"]),
         )
+
+
+PREDICTION_FIELDS = (
+    "id",
+    "intent",
+    "eligible",
+    "eligible_probability",
+    "confidence",
+    "abstained",
+    "model_version",
+    "latency_ms",
+)
+
+
+def _require_prediction_keys(row: dict[str, Any]) -> None:
+    for field in PREDICTION_FIELDS:
+        if field not in row:
+            raise PredictionValidationError(f"missing prediction field '{field}'")
+
+
+def _require_non_negative_number(row: dict[str, Any], field_name: str) -> None:
+    value = row[field_name]
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        raise PredictionValidationError(f"'{field_name}' must be a non-negative number")
+
+
+def _expected_eligible(intent: str, abstained: bool) -> bool:
+    # The binary head's predicted label IS the routing decision; the
+    # five-class head routes the three AI-eligible intents.
+    if intent in BINARY_LABELS:
+        return intent == "eligible" and not abstained
+    return intent in ELIGIBLE_INTENTS and not abstained
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,21 +143,14 @@ def _f1(tp: int, fp: int, fn: int) -> float:
     return 2 * precision * recall / (precision + recall)
 
 
-def _evaluate_language(
+def _tally_routing(
     records: list[DatasetRecord],
-    predictions: list[PredictionRecord],
-    thresholds: AcceptanceThresholds,
+    by_id: dict[str, PredictionRecord],
 ) -> dict[str, Any]:
-    by_id = {prediction.id: prediction for prediction in predictions}
-
     tp = tn = fp = fn = 0
     brier_sum = 0.0
     abstained = 0
     latencies: list[float] = []
-    class_counts: dict[str, tuple[int, int, int]] = {}
-    intent_tp: dict[str, int] = {}
-    intent_gold: dict[str, int] = {}
-
     for record in records:
         prediction = by_id[record.id]
         gold_eligible = record.eligible
@@ -171,6 +168,27 @@ def _evaluate_language(
         brier_sum += (prediction.eligible_probability - int(gold_eligible)) ** 2
         abstained += int(prediction.abstained)
         latencies.append(prediction.latency_ms)
+    return {
+        "tp": tp,
+        "tn": tn,
+        "fp": fp,
+        "fn": fn,
+        "brier_sum": brier_sum,
+        "abstained": abstained,
+        "latencies": latencies,
+    }
+
+
+def _tally_class_counts(
+    records: list[DatasetRecord],
+    by_id: dict[str, PredictionRecord],
+) -> tuple[dict[str, tuple[int, int, int]], dict[str, int], dict[str, int]]:
+    class_counts: dict[str, tuple[int, int, int]] = {}
+    intent_tp: dict[str, int] = {}
+    intent_gold: dict[str, int] = {}
+
+    for record in records:
+        prediction = by_id[record.id]
 
         if record.intent == prediction.intent:
             tp_c, fp_c, fn_c = class_counts.get(record.intent, (0, 0, 0))
@@ -185,6 +203,45 @@ def _evaluate_language(
             intent_gold[record.intent] = intent_gold.get(record.intent, 0) + 1
             if record.intent == prediction.intent and prediction.eligible:
                 intent_tp[record.intent] = intent_tp.get(record.intent, 0) + 1
+
+    return class_counts, intent_tp, intent_gold
+
+
+def _threshold_failures(
+    *,
+    eligible_count: int,
+    no_ai_count: int,
+    false_positive_rate: float,
+    precision: float,
+    macro_f1: float,
+    thresholds: AcceptanceThresholds,
+) -> list[str]:
+    failures: list[str] = []
+    if eligible_count < thresholds.minimum_eligible_count:
+        failures.append("minimum_eligible_count")
+    if no_ai_count < thresholds.minimum_no_ai_count:
+        failures.append("minimum_no_ai_count")
+    if false_positive_rate > thresholds.maximum_no_ai_false_positive_rate:
+        failures.append("maximum_no_ai_false_positive_rate")
+    if precision < thresholds.minimum_eligible_precision:
+        failures.append("minimum_eligible_precision")
+    if macro_f1 < thresholds.minimum_macro_f1:
+        failures.append("minimum_macro_f1")
+    return failures
+
+
+def _evaluate_language(
+    records: list[DatasetRecord],
+    predictions: list[PredictionRecord],
+    thresholds: AcceptanceThresholds,
+) -> dict[str, Any]:
+    by_id = {prediction.id: prediction for prediction in predictions}
+    routing = _tally_routing(records, by_id)
+    class_counts, intent_tp, intent_gold = _tally_class_counts(records, by_id)
+
+    tp, tn, fp, fn = routing["tp"], routing["tn"], routing["fp"], routing["fn"]
+    brier_sum, abstained = routing["brier_sum"], routing["abstained"]
+    latencies: list[float] = routing["latencies"]
 
     no_ai_total = fp + tn
     eligible_predicted = tp + fp
@@ -213,17 +270,14 @@ def _evaluate_language(
     eligible_count = sum(1 for record in records if record.eligible)
     no_ai_count = len(records) - eligible_count
 
-    failures: list[str] = []
-    if eligible_count < thresholds.minimum_eligible_count:
-        failures.append("minimum_eligible_count")
-    if no_ai_count < thresholds.minimum_no_ai_count:
-        failures.append("minimum_no_ai_count")
-    if false_positive_rate > thresholds.maximum_no_ai_false_positive_rate:
-        failures.append("maximum_no_ai_false_positive_rate")
-    if precision < thresholds.minimum_eligible_precision:
-        failures.append("minimum_eligible_precision")
-    if macro_f1 < thresholds.minimum_macro_f1:
-        failures.append("minimum_macro_f1")
+    failures = _threshold_failures(
+        eligible_count=eligible_count,
+        no_ai_count=no_ai_count,
+        false_positive_rate=false_positive_rate,
+        precision=precision,
+        macro_f1=macro_f1,
+        thresholds=thresholds,
+    )
 
     sorted_latencies = sorted(latencies)
     return {
@@ -266,7 +320,7 @@ def evaluate_predictions(
     gold_language = {record.id: record.language for record in gold}
 
     languages: dict[str, Any] = {}
-    for language in sorted({language for language in gold_language.values()}):
+    for language in sorted(set(gold_language.values())):
         languages[language] = _evaluate_language(
             [record for record in gold if record.language == language],
             [

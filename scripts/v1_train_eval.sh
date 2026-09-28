@@ -44,7 +44,7 @@ rm -f ".pipeline/v1_${FAMILY}_train_done.flag"
 
 for SEED in 1 2 3; do
   DIR="models/${PREFIX}-s${SEED}"
-  if [ -f "${DIR}/manifest.json" ] && [ -f "${DIR}/calibration-predictions.jsonl" ]; then
+  if [[ -f "${DIR}/manifest.json" ]] && [[ -f "${DIR}/calibration-predictions.jsonl" ]]; then
     echo "=== ${FAMILY} seed ${SEED}: model exists, skipping train ($(date)) ==="
   else
   echo "=== ${FAMILY} seed ${SEED}: train start $(date) ==="

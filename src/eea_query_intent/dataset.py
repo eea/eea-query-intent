@@ -117,6 +117,38 @@ class DatasetRecord:
         )
 
 
+def _parse_record_line(line: str, line_number: int) -> DatasetRecord:
+    try:
+        row = json.loads(line)
+    except json.JSONDecodeError as exc:
+        raise DatasetValidationError(
+            f"line {line_number}: invalid JSON ({exc.msg})"
+        ) from exc
+    if not isinstance(row, dict):
+        raise DatasetValidationError(
+            f"line {line_number}: record must be a JSON object"
+        )
+    return DatasetRecord.from_mapping(row)
+
+
+def _validate_template_splits(template_splits: dict[str, set[str]]) -> None:
+    for template_id, splits in template_splits.items():
+        if len(splits) > 1:
+            raise DatasetValidationError(
+                f"template '{template_id}' appears in multiple splits "
+                f"({', '.join(sorted(splits))})"
+            )
+
+
+def _require_reviewed(records: list[DatasetRecord]) -> None:
+    for record in records:
+        if record.review_status not in ACCEPTANCE_REVIEW_STATUSES:
+            raise DatasetValidationError(
+                f"record '{record.id}' must be reviewed "
+                "(native_reviewed or llm_reviewed) for an acceptance dataset"
+            )
+
+
 def load_dataset(
     path: Path | str,
     *,
@@ -133,19 +165,7 @@ def load_dataset(
         if not line.strip():
             continue
 
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise DatasetValidationError(
-                f"line {line_number}: invalid JSON ({exc.msg})"
-            ) from exc
-
-        if not isinstance(row, dict):
-            raise DatasetValidationError(
-                f"line {line_number}: record must be a JSON object"
-            )
-
-        record = DatasetRecord.from_mapping(row)
+        record = _parse_record_line(line, line_number)
 
         if record.id in seen_ids:
             raise DatasetValidationError(f"duplicate id '{record.id}'")
@@ -154,20 +174,9 @@ def load_dataset(
         template_splits.setdefault(record.template_id, set()).add(record.split)
         records.append(record)
 
-    for template_id, splits in template_splits.items():
-        if len(splits) > 1:
-            raise DatasetValidationError(
-                f"template '{template_id}' appears in multiple splits "
-                f"({', '.join(sorted(splits))})"
-            )
-
+    _validate_template_splits(template_splits)
     if require_acceptance_ready:
-        for record in records:
-            if record.review_status not in ACCEPTANCE_REVIEW_STATUSES:
-                raise DatasetValidationError(
-                    f"record '{record.id}' must be reviewed "
-                    "(native_reviewed or llm_reviewed) for an acceptance dataset"
-                )
+        _require_reviewed(records)
 
     return records
 

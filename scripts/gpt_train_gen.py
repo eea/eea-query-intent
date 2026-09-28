@@ -18,6 +18,8 @@ import sys
 import time
 from pathlib import Path
 
+from gpt_common import texts_from_dirs
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -44,18 +46,20 @@ DEDUP_DIRS = [
 
 
 def existing_texts() -> set[str]:
-    seen = set()
-    dirs = DEDUP_DIRS + [OUT_DIR]
-    for d in dirs:
-        if not d.exists():
-            continue
-        for path in d.glob("*.jsonl"):
-            for line in path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
-                    rec = json.loads(line)
-                    if isinstance(rec, dict) and "text" in rec:
-                        seen.add(rec["text"].casefold())
-    return seen
+    return texts_from_dirs(DEDUP_DIRS + [OUT_DIR])
+
+
+def _select_fresh(got: list[str], seen: set[str], need: int) -> list[str]:
+    # keep only the first `need` fresh rows (drop batch + earlier dups)
+    fresh = []
+    for r in got:
+        key = r.casefold()
+        if key not in seen:
+            fresh.append(r)
+            seen.add(key)
+            if len(fresh) == need:
+                break
+    return fresh
 
 
 def generate_intent(
@@ -67,14 +71,7 @@ def generate_intent(
     while len(rows) < n:
         need = min(batch, n - len(rows))
         got = call_gpt(build_prompt(lang, intent, need))
-        fresh = []
-        for r in got:
-            key = r.casefold()
-            if key not in seen:
-                fresh.append(r)
-                seen.add(key)
-                if len(fresh) == need:
-                    break
+        fresh = _select_fresh(got, seen, need)
         rows.extend(fresh)
         print(f"{lang}/{intent} {len(rows)}/{n}", flush=True)
         # Escape hatch: the model can keep re-emitting phrases it already
@@ -112,7 +109,7 @@ def main() -> None:
             for line in out.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-    per_intent = {intent: 0 for intent in TRAIN_QUOTAS}
+    per_intent = dict.fromkeys(TRAIN_QUOTAS, 0)
     for rec in records:
         per_intent[rec["intent"]] += 1
     avoid = existing_texts()

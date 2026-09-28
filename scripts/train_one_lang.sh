@@ -16,8 +16,8 @@ LANG_="$1"
 exec >> "/tmp/trn_1_${LANG_}.log" 2>&1
 
 # 2800: the QA per-intent tolerance allows slightly shorter finals.
-if [ -f "data/training/v1/${LANG_}.jsonl" ] && \
-   [ "$(wc -l < "data/training/v1/${LANG_}.jsonl")" -ge 2800 ]; then
+if [[ -f "data/training/v1/${LANG_}.jsonl" ]] && \
+   [[ "$(wc -l < "data/training/v1/${LANG_}.jsonl")" -ge 2800 ]]; then
   echo "${LANG_}: already complete ($(wc -l < "data/training/v1/${LANG_}.jsonl") rows)"
   exit 0
 fi
@@ -30,7 +30,7 @@ GPTM="openai-codex/gpt-5.6-luna"
 GPT_FALLBACK="${GPT_FALLBACK:-1}"
 GEN_M="$INHOUSE"
 QA_M="$INHOUSE"
-if [ -f .pipeline/train_routing.sh ]; then
+if [[ -f .pipeline/train_routing.sh ]]; then
   # shellcheck disable=SC1091
   source .pipeline/train_routing.sh
   # Indirect expansion: macOS /bin/bash is 3.2, which rejects nested
@@ -45,29 +45,31 @@ fi
 # the Codex quota for their own work), GPT-routed languages are skipped
 # without any GPT call and the in-house GPT fallback is disabled. Removing
 # the file resumes the GPT languages on the next relaunch cycle.
-if [ -f .pipeline/gpt_paused ]; then
-  if [ "$GEN_M" = "$GPTM" ] || [ "$QA_M" = "$GPTM" ]; then
+if [[ -f .pipeline/gpt_paused ]]; then
+  if [[ "$GEN_M" = "$GPTM" ]] || [[ "$QA_M" = "$GPTM" ]]; then
     echo "${LANG_}: GPT paused (.pipeline/gpt_paused) - skipping, no GPT calls"
     exit 3
   fi
   GPT_FALLBACK=0
 fi
 
-# run_step <script> <model>: run one pipeline step; the step is resumable,
-# so a retry after a failure continues where it stopped.
+# run_step <script> <model> <lang>: run one pipeline step; the step is
+# resumable, so a retry after a failure continues where it stopped.
 run_step() {
-  export EEA_QI_GEN_MODEL="$2" EEA_QI_QA_MODEL="$2"
-  uv run python "scripts/$1" "$LANG_"
+  local script="$1" model="$2" lang="$3"
+  export EEA_QI_GEN_MODEL="$model" EEA_QI_QA_MODEL="$model"
+  uv run python "scripts/$script" "$lang"
+  return $?
 }
 
 echo "${LANG_} start $(date) gen_model=${GEN_M}"
-if ! run_step gpt_train_gen.py "$GEN_M"; then
-  if [ "$GEN_M" != "$GPTM" ] && [ "$GPT_FALLBACK" = "1" ]; then
+if ! run_step gpt_train_gen.py "$GEN_M" "$LANG_"; then
+  if [[ "$GEN_M" != "$GPTM" ]] && [[ "$GPT_FALLBACK" = "1" ]]; then
     # In-house failed (truncated JSON, gateway hiccup...): the model is
     # "not sure" about this language, so fall back to GPT per the routing
     # rule. The partial raw file makes the retry continue per intent.
     echo "${LANG_}: in-house gen failed - falling back to GPT"
-    if ! run_step gpt_train_gen.py "$GPTM"; then
+    if ! run_step gpt_train_gen.py "$GPTM" "$LANG_"; then
       echo "${LANG_}: gen FAILED (GPT fallback too)"; exit 1
     fi
     GEN_M="$GPTM"
@@ -76,10 +78,10 @@ if ! run_step gpt_train_gen.py "$GEN_M"; then
   fi
 fi
 echo "${LANG_} qa $(date) qa_model=${QA_M}"
-if ! run_step gpt_train_qa.py "$QA_M"; then
-  if [ "$QA_M" != "$GPTM" ] && [ "$GPT_FALLBACK" = "1" ]; then
+if ! run_step gpt_train_qa.py "$QA_M" "$LANG_"; then
+  if [[ "$QA_M" != "$GPTM" ]] && [[ "$GPT_FALLBACK" = "1" ]]; then
     echo "${LANG_}: in-house QA failed - falling back to GPT"
-    if ! run_step gpt_train_qa.py "$GPTM"; then
+    if ! run_step gpt_train_qa.py "$GPTM" "$LANG_"; then
       echo "${LANG_}: qa FAILED (GPT fallback too)"; exit 1
     fi
   else

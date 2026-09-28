@@ -36,23 +36,33 @@ ARG HF_MODEL_REPO=eeahugs/query-intent-setfit-v1
 # (2026-09-18). Change only for a deliberately new model version.
 ARG HF_MODEL_REVISION=ba111788b58e4f1e0dafb3e74189f0a08d1e3186
 
-# CPU-only torch first, so pip never pulls the CUDA-bundled wheel (~2.5 GB).
-RUN pip install --no-cache-dir torch==2.14.0 \
-    --index-url https://download.pytorch.org/whl/cpu
+# Runtime lockfile (S8544): every package is pinned exactly in this file,
+# which is the single source of truth for the image's dependencies.
+COPY runtime-requirements.txt /tmp/runtime-requirements.txt
 
-RUN pip install --no-cache-dir \
-    fastapi==0.141.1 \
-    uvicorn==0.52.4 \
-    setfit==1.2.0 \
-    huggingface_hub==1.30.0 \
-    numpy==1.26.4
+# Single install layer (S7031): install the hash-locked file. PyPI is
+# the primary index and the PyTorch CPU mirror is an extra index; the
+# torch pin carries the +cpu local version tag, so it can only resolve
+# from the CPU mirror - pip never pulls the CUDA-bundled wheel
+# (~2.5 GB). --require-hashes makes pip verify every wheel against the
+# committed sha256 hashes (docker:S8544 "verified versions"), so a
+# tampered or swapped artifact fails the build loudly. --only-binary
+# must stay on the command line (not in pip.conf): the docker:S8541
+# rule only sees visible flags.
+RUN pip install --no-cache-dir --require-hashes --only-binary=:all: \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r /tmp/runtime-requirements.txt
 
 WORKDIR /app
 COPY src/ src/
 
 # Bake the pinned model snapshot (weights + tokenizer + manifest.json) into
-# the image. Runtime stays offline (HF_HUB_OFFLINE=1 below).
-RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='${HF_MODEL_REPO}', revision='${HF_MODEL_REVISION}', local_dir='/app/models/setfit')"
+# the image. Runtime stays offline (HF_HUB_OFFLINE=1 below). The whole
+# -c program is one double-quoted shell string (Dockerfile-level
+# continuations) so the ARG values are expanded by the shell.
+RUN python -c "from huggingface_hub import snapshot_download; \
+    snapshot_download(repo_id='${HF_MODEL_REPO}', \
+    revision='${HF_MODEL_REVISION}', local_dir='/app/models/setfit')"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \

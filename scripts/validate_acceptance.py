@@ -112,6 +112,94 @@ def load_existing() -> tuple[set[str], set[str]]:
     return texts, template_ids
 
 
+def _row_problems(
+    row: dict,
+    lang: str,
+    seen_texts: set[str],
+    seen_templates: set[str],
+    existing_texts: set[str],
+    existing_templates: set[str],
+) -> tuple[list[str], bool]:
+    """Check one exam row against the shard and existing-data constraints.
+
+    Returns (errors, intent_valid). Pure: the caller owns the seen-sets
+    and the row accumulator, exactly mirroring the original loop order.
+    """
+    errors: list[str] = []
+    rid = row.get("id")
+    text = row["text"]
+    if row.get("language") != lang:
+        errors.append(f"{lang}: row {rid} has language {row.get('language')}")
+    if row.get("intent") not in INTENTS:
+        errors.append(f"{lang}: row {rid} bad intent {row.get('intent')}")
+        return errors, False
+    problem = text_ok(text, lang)
+    if problem:
+        errors.append(f"{lang}: row {rid}: {problem}")
+    key = text.casefold()
+    if key in seen_texts:
+        errors.append(f"{lang}: duplicate text {text!r}")
+    if key in existing_texts:
+        errors.append(f"{lang}: row {rid} overlaps existing data: {text!r}")
+    tid = row.get("template_id")
+    if tid in seen_templates:
+        errors.append(f"{lang}: duplicate template_id {tid}")
+    if tid in existing_templates:
+        errors.append(f"{lang}: template_id {tid} collides with training data")
+    if row.get("review_status") != "llm_reviewed":
+        errors.append(f"{lang}: row {rid} not llm_reviewed")
+    if row.get("split") != "test":
+        errors.append(f"{lang}: row {rid} split != test")
+    return errors, True
+
+
+def _validate_shard(
+    shard: Path,
+    existing_texts: set[str],
+    existing_templates: set[str],
+    seen_templates: set[str],
+    all_rows: list[dict],
+    errors: list[str],
+) -> dict:
+    lang = shard.stem
+    rows = [
+        json.loads(line)
+        for line in shard.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    counts = dict.fromkeys(INTENTS, 0)
+    seen_texts: set[str] = set()
+    for row in rows:
+        problems, intent_valid = _row_problems(
+            row,
+            lang,
+            seen_texts,
+            seen_templates,
+            existing_texts,
+            existing_templates,
+        )
+        errors.extend(problems)
+        if not intent_valid:
+            continue
+        counts[row["intent"]] += 1
+        seen_texts.add(row["text"].casefold())
+        seen_templates.add(row.get("template_id"))
+        all_rows.append(row)
+    for intent in INTENTS:
+        if counts[intent] != TARGETS[intent]:
+            errors.append(
+                f"{lang}: {intent} count {counts[intent]} != {TARGETS[intent]}"
+            )
+    return {"rows": len(rows), "counts": counts}
+
+
+def _report_errors(errors: list[str]) -> None:
+    for err in errors[:20]:
+        print(f"ERROR {err}", file=sys.stderr)
+    if len(errors) > 20:
+        print(f"ERROR ... and {len(errors) - 20} more", file=sys.stderr)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--merge", action="store_true", help="write merged test.jsonl")
@@ -134,54 +222,9 @@ def main() -> None:
     per_language: dict[str, dict] = {}
 
     for shard in shards:
-        lang = shard.stem
-        rows = [
-            json.loads(line)
-            for line in shard.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
-        counts = {intent: 0 for intent in INTENTS}
-        seen_texts: set[str] = set()
-        for row in rows:
-            text = row["text"]
-            if row.get("language") != lang:
-                errors.append(
-                    f"{lang}: row {row.get('id')} has language {row.get('language')}"
-                )
-            if row.get("intent") not in INTENTS:
-                errors.append(
-                    f"{lang}: row {row.get('id')} bad intent {row.get('intent')}"
-                )
-                continue
-            counts[row["intent"]] += 1
-            problem = text_ok(text, lang)
-            if problem:
-                errors.append(f"{lang}: row {row.get('id')}: {problem}")
-            key = text.casefold()
-            if key in seen_texts:
-                errors.append(f"{lang}: duplicate text {text!r}")
-            seen_texts.add(key)
-            if key in existing_texts:
-                errors.append(
-                    f"{lang}: row {row.get('id')} overlaps existing data: {text!r}"
-                )
-            tid = row.get("template_id")
-            if tid in seen_templates:
-                errors.append(f"{lang}: duplicate template_id {tid}")
-            seen_templates.add(tid)
-            if tid in existing_templates:
-                errors.append(f"{lang}: template_id {tid} collides with training data")
-            if row.get("review_status") != "llm_reviewed":
-                errors.append(f"{lang}: row {row.get('id')} not llm_reviewed")
-            if row.get("split") != "test":
-                errors.append(f"{lang}: row {row.get('id')} split != test")
-            all_rows.append(row)
-        for intent in INTENTS:
-            if counts[intent] != TARGETS[intent]:
-                errors.append(
-                    f"{lang}: {intent} count {counts[intent]} != {TARGETS[intent]}"
-                )
-        per_language[lang] = {"rows": len(rows), "counts": counts}
+        per_language[shard.stem] = _validate_shard(
+            shard, existing_texts, existing_templates, seen_templates, all_rows, errors
+        )
 
     summary = {
         "languages": len(shards),
@@ -193,10 +236,7 @@ def main() -> None:
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     if errors:
-        for err in errors[:20]:
-            print(f"ERROR {err}", file=sys.stderr)
-        if len(errors) > 20:
-            print(f"ERROR ... and {len(errors) - 20} more", file=sys.stderr)
+        _report_errors(errors)
         sys.exit(1)
 
     if args.merge:

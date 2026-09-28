@@ -241,6 +241,34 @@ def _pi_once(prompt: str, model: str = MODEL) -> str:
     return (out.stdout or "") + "\n" + (out.stderr or "")
 
 
+def _retry_non_json(
+    text: str, prompt: str, model: str, limit_waits: int
+) -> dict | None:
+    # A reply that starts like JSON but fails to parse is almost
+    # always a truncated generation, not a quota limit: retry
+    # fast. Anything else (rate-limit text, errors, empty) gets
+    # the long 5-minute backoff. Strip the markdown fence first:
+    # the gateway often wraps replies in ```json and truncates
+    # mid-object, which would otherwise look non-JSON.
+    unfenced = re.sub(r"^\s*```(?:json)?\s*", "", text).lstrip()
+    partial = unfenced[:1] in ("{", "[")
+    wait_secs = 15 if partial else 300
+    max_waits = 20 if partial else limit_waits
+    for wait in range(1, max_waits + 1):
+        print(
+            f"  GPT call failed (limit/transient), "
+            f"waiting {wait_secs}s ({wait}/{max_waits})",
+            flush=True,
+        )
+        time.sleep(wait_secs)
+        text = _pi_once(prompt, model)
+        try:
+            return extract_json(text)
+        except Exception:
+            continue
+    return None
+
+
 def call_gpt_raw(
     prompt: str, tries: int = 3, limit_waits: int = 60, model: str = GEN_MODEL
 ) -> dict:
@@ -259,29 +287,10 @@ def call_gpt_raw(
                     f"  non-JSON reply ({len(text)} chars): {text[:300].strip()!r}",
                     flush=True,
                 )
-                # A reply that starts like JSON but fails to parse is almost
-                # always a truncated generation, not a quota limit: retry
-                # fast. Anything else (rate-limit text, errors, empty) gets
-                # the long 5-minute backoff. Strip the markdown fence first:
-                # the gateway often wraps replies in ```json and truncates
-                # mid-object, which would otherwise look non-JSON.
-                unfenced = re.sub(r"^\s*```(?:json)?\s*", "", text).lstrip()
-                partial = unfenced[:1] in ("{", "[")
-                wait_secs = 15 if partial else 300
-                max_waits = 20 if partial else limit_waits
-                for wait in range(1, max_waits + 1):
-                    print(
-                        f"  GPT call failed (limit/transient), "
-                        f"waiting {wait_secs}s ({wait}/{max_waits})",
-                        flush=True,
-                    )
-                    time.sleep(wait_secs)
-                    text = _pi_once(prompt, model)
-                    try:
-                        return extract_json(text)
-                    except Exception:
-                        continue
-                raise RuntimeError("GPT call failed after all waits") from last_err
+                result = _retry_non_json(text, prompt, model, limit_waits)
+                if result is None:
+                    raise RuntimeError("GPT call failed after all waits") from last_err
+                return result
         except Exception as e:  # noqa: BLE001
             last_err = e
             if attempt < tries:
@@ -323,6 +332,19 @@ def build_prompt(lang: str, intent: str, n: int) -> str:
     return prompt
 
 
+def _select_fresh(got: list[str], seen: set[str], need: int) -> list[str]:
+    # keep only the first `need` fresh rows (drop batch + earlier dups)
+    fresh = []
+    for r in got:
+        key = r.casefold()
+        if key not in seen:
+            fresh.append(r)
+            seen.add(key)
+            if len(fresh) == need:
+                break
+    return fresh
+
+
 def generate_intent(
     lang: str, intent: str, n: int, batch: int, avoid: set[str] | None = None
 ) -> list[str]:
@@ -332,15 +354,7 @@ def generate_intent(
     while len(rows) < n:
         need = min(batch, n - len(rows))
         got = call_gpt(build_prompt(lang, intent, need))
-        # keep only the first `need` fresh rows (drop batch + earlier dups)
-        fresh = []
-        for r in got:
-            key = r.casefold()
-            if key not in seen:
-                fresh.append(r)
-                seen.add(key)
-                if len(fresh) == need:
-                    break
+        fresh = _select_fresh(got, seen, need)
         rows.extend(fresh)
         print(f"{lang}/{intent} {len(rows)}/{n}", flush=True)
         # Escape hatch: the model can keep re-emitting phrases it already
@@ -378,7 +392,7 @@ def main() -> None:
             for line in out.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-    per_intent = {intent: 0 for intent in QUOTAS}
+    per_intent = dict.fromkeys(QUOTAS, 0)
     for rec in records:
         per_intent[rec["intent"]] += 1
     avoid = {rec["text"].casefold() for rec in records}

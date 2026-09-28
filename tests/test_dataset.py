@@ -122,3 +122,19 @@ def test_acceptance_data_accepts_llm_and_native_reviewed(
     records = load_dataset(path, require_acceptance_ready=True)
 
     assert len(records) == 2
+
+
+def test_rejects_invalid_json_lines(tmp_path: Path) -> None:
+    path = tmp_path / "data.jsonl"
+    path.write_text('{"id": "en-0001"\n', encoding="utf-8")
+
+    with pytest.raises(DatasetValidationError, match="invalid JSON"):
+        load_dataset(path)
+
+
+def test_rejects_non_object_records(tmp_path: Path) -> None:
+    path = tmp_path / "data.jsonl"
+    path.write_text("[1, 2, 3]\n", encoding="utf-8")
+
+    with pytest.raises(DatasetValidationError, match="must be a JSON object"):
+        load_dataset(path)

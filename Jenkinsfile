@@ -159,7 +159,7 @@ pipeline {
           def scannerHome = tool 'SonarQubeScanner'
           // Whole -D list precomputed here (house pattern) so the sh line
           // carries only explicit env.* interpolations.
-          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME} '-Dsonar.coverage.exclusions=scripts/**' '-Dsonar.exclusions=scripts/translations/**'"
+          env.sonarParams = "-Dsonar.python.coverage.reportPaths=./xunit-reports-current/coverage/cobertura-coverage.xml -Dsonar.sources=. -Dsonar.projectKey=${env.GIT_NAME} -Dsonar.projectName=${env.GIT_NAME} -Dsonar.projectVersion=${env.BASE_VERSION} -Dsonar.branch.name=${env.BRANCH_NAME} '-Dsonar.coverage.exclusions=scripts/**,tests/**' '-Dsonar.exclusions=scripts/translations/**'"
           withSonarQubeEnv('Sonarqube') {
             // Python coverage goes to sonar.python.coverage.reportPaths as
             // Cobertura XML (never the JS LCOV property). sonar.sources is
